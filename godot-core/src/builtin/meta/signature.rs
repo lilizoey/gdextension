@@ -163,7 +163,7 @@ macro_rules! impl_signature_for_tuple {
                     .unwrap_or_else(|e| return_error::<$R>(method_name, &e));
 
                 // FIXME is inc_ref needed here?
-				// std::mem::forget(ret_val);
+				std::mem::forget(ret_val);
             }
         }
     };

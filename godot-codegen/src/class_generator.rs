@@ -990,9 +990,16 @@ fn make_virtual_method(class_method: &ClassMethod, ctx: &mut Context) -> TokenSt
 
     let receiver = make_receiver_self_param(false, class_method.is_const);
     let [params, _, _, _] = make_params(&class_method.arguments, class_method.is_vararg, ctx);
+    let return_decl = match &class_method.return_value {
+        Some(return_value) => {
+            let ty_ = to_rust_type(&return_value.type_, ctx);
+            quote! { -> #ty_ }
+        }
+        None => TokenStream::new(),
+    };
 
     quote! {
-        fn #method_name ( #receiver #( #params , )* ) {
+        fn #method_name ( #receiver #( #params , )* ) #return_decl {
           unimplemented!()
         }
     }
@@ -1020,7 +1027,7 @@ fn make_all_virtual_methods(
         let superclass = ctx.get_engine_class(base);
         extend_virtuals(superclass);
     }
-    all_virtuals
+    let mut virtuals: Vec<TokenStream> = all_virtuals
         .into_iter()
         .filter_map(|method| {
             if is_method_excluded(&method, true, ctx) {
@@ -1029,7 +1036,17 @@ fn make_all_virtual_methods(
                 Some(make_virtual_method(&method, ctx))
             }
         })
-        .collect()
+        .collect();
+
+    if &class.name == "ScriptExtension" {
+        virtuals.push(quote! {
+            fn instance_create(&self, for_object: Gd<Object>) -> *mut std::ffi::c_void {
+                unimplemented!()
+            }
+        });
+    }
+
+    virtuals
 }
 
 fn get_methods_in_class(class: &Class) -> &[ClassMethod] {

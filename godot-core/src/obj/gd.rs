@@ -6,6 +6,7 @@
 
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr;
 
@@ -461,6 +462,20 @@ where
         }
 
         std::mem::forget(self);
+    }
+}
+
+impl<T> Gd<T>
+where
+    T: GodotClass,
+{
+    /// Used for when godot passes a `Ref<T>` pointer.
+    ///
+    /// For instance in virtual methods, all arguments that are objects inheriting from `RefCounted` will
+    /// require the use of this constructor.
+    pub unsafe fn from_ref_sys(ptr: sys::GDExtensionConstRefPtr) -> Self {
+        let object_ptr = interface_fn!(ref_get_object)(ptr);
+        Self::from_obj_sys(object_ptr)
     }
 }
 

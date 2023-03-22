@@ -368,3 +368,19 @@ mod scalars {
         }
     }
 }
+
+impl GodotFfi for *mut std::ffi::c_void {
+    unsafe fn from_sys(ptr: sys::GDExtensionTypePtr) -> Self {
+        ptr as Self
+    }
+
+    unsafe fn from_sys_init(_: impl FnOnce(sys::GDExtensionTypePtr)) -> Self {
+        std::ptr::null_mut() as Self
+    }
+
+    fn sys(&self) -> sys::GDExtensionTypePtr {
+        (*self) as sys::GDExtensionTypePtr
+    }
+
+    unsafe fn write_sys(&self, _: sys::GDExtensionTypePtr) {}
+}

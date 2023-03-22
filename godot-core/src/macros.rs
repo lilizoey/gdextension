@@ -278,6 +278,7 @@ macro_rules! gdext_register_method {
 #[macro_export]
 macro_rules! gdext_virtual_method_callback_inner {
     (
+        $get_fn:ident,
         $Class:ty,
         $map_method:ident,
         fn $method_name:ident(
@@ -293,6 +294,7 @@ macro_rules! gdext_virtual_method_callback_inner {
                 ret: sys::GDExtensionTypePtr,
             ) {
                 $crate::gdext_ptrcall!(
+                    $get_fn,
                     instance_ptr, args, ret;
                     $Class;
                     fn $method_name( $( $arg : $Param, )* ) -> $Ret
@@ -319,6 +321,7 @@ macro_rules! gdext_virtual_method_callback {
         ) -> $RetTy:ty
     ) => {
         $crate::gdext_virtual_method_callback_inner!(
+            get_mut,
             $Class,
             map_mut,
             fn $method_name(
@@ -337,6 +340,7 @@ macro_rules! gdext_virtual_method_callback {
         ) -> $RetTy:ty
     ) => {
         $crate::gdext_virtual_method_callback_inner!(
+            get,
             $Class,
             map,
             fn $method_name(
@@ -375,6 +379,7 @@ macro_rules! gdext_virtual_method_callback {
     ) => {
         // recurse this macro
         $crate::gdext_virtual_method_callback!(
+            get,
             $Class,
             fn $method_name(
                 &self
@@ -388,6 +393,7 @@ macro_rules! gdext_virtual_method_callback {
 #[macro_export]
 macro_rules! gdext_ptrcall {
     (
+        $get_fn:ident,
         $instance_ptr:ident, $args:ident, $ret:ident;
         $Class:ty;
         fn $method_name:ident(
@@ -398,7 +404,7 @@ macro_rules! gdext_ptrcall {
 
         $crate::out!("ptrcall: {}", stringify!($method_name));
         let storage = $crate::private::as_storage::<$Class>($instance_ptr);
-        let mut instance = storage.get_mut();
+        let mut instance = storage.$get_fn();
 
         let mut idx = 0;
         $(
@@ -414,7 +420,7 @@ macro_rules! gdext_ptrcall {
 
         <$($RetTy)+ as sys::GodotFfi>::write_sys(&ret_val, $ret);
         // FIXME is inc_ref needed here?
-        // #[allow(clippy::forget_copy)]
-        // std::mem::forget(ret_val);
+        #[allow(clippy::forget_copy)]
+        std::mem::forget(ret_val);
     };
 }
