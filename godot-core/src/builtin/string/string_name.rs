@@ -65,6 +65,8 @@ impl StringName {
     }
 }
 
+impl_string_common_methods!(StringName);
+
 // SAFETY:
 // - `move_return_ptr`
 //   Nothing special needs to be done beyond a `std::mem::swap` when returning a StringName.

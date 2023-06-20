@@ -12,6 +12,7 @@ use sys::{ffi_methods, interface_fn, GodotFfi};
 
 use crate::builtin::inner;
 
+use super::macros::impl_string_common_methods;
 use super::string_chars::validate_unicode_scalar_sequence;
 use super::{NodePath, StringName};
 
@@ -99,6 +100,15 @@ impl GodotString {
         inner::InnerString::from_outer(self)
     }
 }
+
+impl_string_common_methods!(GodotString);
+
+// SAFETY:
+// Strings in godot are atomically reference counted values, so we can safely send them between threads.
+unsafe impl Send for GodotString {}
+// SAFETY:
+// Strings in godot are atomically reference and copy-on-write, so we can safely share them between threads.
+unsafe impl Sync for GodotString {}
 
 // SAFETY:
 // - `move_return_ptr`
