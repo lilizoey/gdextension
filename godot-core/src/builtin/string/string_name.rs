@@ -11,7 +11,7 @@ use std::fmt;
 
 use crate::builtin::inner;
 
-use super::{GodotString, NodePath};
+use super::{FromGodotStr, GodotString, NodePath};
 
 /// A string optimized for unique names.
 ///
@@ -35,11 +35,11 @@ impl StringName {
         self.as_inner().length() as usize
     }
 
-    /// Returns `true` if this is the empty string.
-    ///
-    /// _Godot equivalent: `is_empty`_
-    pub fn is_empty(&self) -> bool {
-        self.as_inner().is_empty()
+    pub fn parse<F>(&self) -> Option<F>
+    where
+        F: FromGodotStr,
+    {
+        F::from_string_name(self)
     }
 
     /// Returns a 32-bit integer hash value representing the string.

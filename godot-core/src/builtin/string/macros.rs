@@ -137,6 +137,7 @@ macro_rules! impl_string_common_methods {
                     .countn(what.into(), start as i64, end as i64) as usize
             }
 
+            #[must_use]
             pub fn dedent(&self) -> GodotString {
                 self.as_inner().dedent()
             }
@@ -169,6 +170,105 @@ macro_rules! impl_string_common_methods {
                     Some(index as usize)
                 }
             }
+
+            pub fn base_dir(&self) -> Option<GodotString> {
+                self.as_inner().get_base_dir().into_option()
+            }
+
+            pub fn base_name(&self) -> GodotString {
+                self.as_inner().get_basename()
+            }
+
+            pub fn extension(&self) -> Option<GodotString> {
+                self.as_inner().get_extension().into_option()
+            }
+
+            pub fn file(&self) -> GodotString {
+                self.as_inner().get_file()
+            }
+
+            #[doc(alias = "get_slice")]
+            pub fn split_nth<S: Into<GodotString>>(
+                &self,
+                delimiter: S,
+                n: usize,
+            ) -> Option<GodotString> {
+                let delimiter = delimiter.into();
+                if self.split_count(delimiter.clone()) <= n {
+                    None
+                } else {
+                    Some(self.as_inner().get_slice(delimiter, n as i64))
+                }
+            }
+
+            #[doc(alias = "get_slice_count")]
+            pub fn split_count<S: Into<GodotString>>(&self, delimiter: S) -> usize {
+                self.as_inner().get_slice_count(delimiter.into()) as usize
+            }
+
+            pub fn hex_to_int(&self) -> i64 {
+                self.as_inner().hex_to_int()
+            }
+
+            #[must_use]
+            pub fn indent<S: Into<GodotString>>(&self, prefix: S) -> GodotString {
+                self.as_inner().indent(prefix.into())
+            }
+
+            #[must_use]
+            pub fn insert<S: Into<GodotString>>(&self, index: usize, string: S) -> GodotString {
+                self.as_inner().insert(index as i64, string.into())
+            }
+
+            pub fn is_absolute_path(&self) -> bool {
+                self.as_inner().is_absolute_path()
+            }
+
+            pub fn is_empty(&self) -> bool {
+                self.as_inner().is_empty()
+            }
+
+            pub fn is_relative_path(&self) -> bool {
+                self.as_inner().is_relative_path()
+            }
+
+            pub fn is_subsequence_of<S: Into<GodotString>>(&self, string: S) -> bool {
+                self.as_inner().is_subsequence_of(string.into())
+            }
+
+            #[doc(alias = "is_subsequence_ofn")]
+            pub fn is_subsequence_of_ignore_case<S: Into<GodotString>>(&self, string: S) -> bool {
+                self.as_inner().is_subsequence_ofn(string.into())
+            }
+
+            pub fn is_valid_file_name(&self) -> bool {
+                self.as_inner().is_valid_filename()
+            }
+
+            pub fn is_valid_float(&self) -> bool {
+                self.as_inner().is_valid_float()
+            }
+
+            pub fn is_valid_hex_number(&self) -> bool {
+                self.as_inner().is_valid_hex_number(false)
+            }
+
+            #[doc(alias = "is_valid_hex_number")]
+            pub fn is_valid_prefixed_hex_number(&self) -> bool {
+                self.as_inner().is_valid_hex_number(true)
+            }
+
+            pub fn is_valid_html_color(&self) -> bool {
+                self.as_inner().is_valid_html_color()
+            }
+
+            pub fn is_valid_int(&self) -> bool {
+                self.as_inner().is_valid_int()
+            }
+
+            pub fn is_valid_ip_address(&self) -> bool {
+                self.as_inner().is_valid_ip_address()
+            }
         }
     };
 }
@@ -176,6 +276,7 @@ macro_rules! impl_string_common_methods {
 pub(super) use impl_string_common_methods;
 
 // godotstring to add:
+// humanize_size
 
 // stringname to add:
 

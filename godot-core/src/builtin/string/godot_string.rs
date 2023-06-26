@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::{Index, RangeBounds};
 use std::{convert::Infallible, ffi::c_char, fmt, str::FromStr};
 
 use godot_ffi as sys;
@@ -14,7 +15,7 @@ use crate::builtin::inner;
 
 use super::macros::impl_string_common_methods;
 use super::string_chars::validate_unicode_scalar_sequence;
-use super::{NodePath, StringName};
+use super::{FromGodotStr, NodePath, StringName};
 
 /// Godot's reference counted string type.
 #[repr(C, align(8))]
@@ -30,6 +31,21 @@ impl GodotString {
 
     fn from_opaque(opaque: OpaqueString) -> Self {
         Self { opaque }
+    }
+
+    pub fn into_option(self) -> Option<Self> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    pub fn parse<F>(&self) -> Option<F>
+    where
+        F: FromGodotStr,
+    {
+        F::from_godot_string(self)
     }
 
     /// Returns a 32-bit integer hash value representing the string.
@@ -165,6 +181,29 @@ impl fmt::Debug for GodotString {
         write!(f, "\"{s}\"")
     }
 }
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+// Indexing
+
+macro_rules! reimpl_index {
+    ($Ty:ty, $Output:ty, $Index:ty) => {
+        impl Index<$Index> for $Ty {
+            type Output = $Output;
+
+            fn index(&self, index: $Index) -> &Self::Output {
+                &self.chars_checked()[index]
+            }
+        }
+    };
+}
+
+reimpl_index!(GodotString, char, usize);
+reimpl_index!(GodotString, [char], std::ops::Range<usize>);
+reimpl_index!(GodotString, [char], std::ops::RangeFrom<usize>);
+reimpl_index!(GodotString, [char], std::ops::RangeFull);
+reimpl_index!(GodotString, [char], std::ops::RangeInclusive<usize>);
+reimpl_index!(GodotString, [char], std::ops::RangeTo<usize>);
+reimpl_index!(GodotString, [char], std::ops::RangeToInclusive<usize>);
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------
 // Conversion from/into Rust string-types
