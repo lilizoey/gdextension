@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::ops::{Index, RangeBounds};
+use std::borrow::Cow;
+use std::ops::Deref;
 use std::{convert::Infallible, ffi::c_char, fmt, str::FromStr};
 
 use godot_ffi as sys;
@@ -181,29 +182,6 @@ impl fmt::Debug for GodotString {
         write!(f, "\"{s}\"")
     }
 }
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------
-// Indexing
-
-macro_rules! reimpl_index {
-    ($Ty:ty, $Output:ty, $Index:ty) => {
-        impl Index<$Index> for $Ty {
-            type Output = $Output;
-
-            fn index(&self, index: $Index) -> &Self::Output {
-                &self.chars_checked()[index]
-            }
-        }
-    };
-}
-
-reimpl_index!(GodotString, char, usize);
-reimpl_index!(GodotString, [char], std::ops::Range<usize>);
-reimpl_index!(GodotString, [char], std::ops::RangeFrom<usize>);
-reimpl_index!(GodotString, [char], std::ops::RangeFull);
-reimpl_index!(GodotString, [char], std::ops::RangeInclusive<usize>);
-reimpl_index!(GodotString, [char], std::ops::RangeTo<usize>);
-reimpl_index!(GodotString, [char], std::ops::RangeToInclusive<usize>);
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------
 // Conversion from/into Rust string-types

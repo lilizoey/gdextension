@@ -80,12 +80,36 @@ macro_rules! impl_string_common_methods {
             }
 
             #[doc(alias = "casecmp_to")]
-            pub fn case_cmp(&self, other: &GodotString) -> std::cmp::Ordering {
+            pub fn cmp(&self, other: &GodotString) -> std::cmp::Ordering {
                 use std::cmp::Ordering;
 
                 let ordering = self.as_inner().casecmp_to(other.clone());
 
                 match ordering {
+                    -1 => Ordering::Less,
+                    0 => Ordering::Equal,
+                    1 => Ordering::Greater,
+                    _ => unreachable!(),
+                }
+            }
+
+            #[doc(alias = "naturalnocasecmp_to")]
+            pub fn natural_cmp_ignore_case(&self, other: GodotString) -> std::cmp::Ordering {
+                use std::cmp::Ordering;
+
+                match self.as_inner().naturalnocasecmp_to(other) {
+                    -1 => Ordering::Less,
+                    0 => Ordering::Equal,
+                    1 => Ordering::Greater,
+                    _ => unreachable!(),
+                }
+            }
+
+            #[doc(alias = "nocasecmp_to")]
+            pub fn cmp_ignore_case(&self, other: GodotString) -> std::cmp::Ordering {
+                use std::cmp::Ordering;
+
+                match self.as_inner().nocasecmp_to(other) {
                     -1 => Ordering::Less,
                     0 => Ordering::Equal,
                     1 => Ordering::Greater,
@@ -269,6 +293,88 @@ macro_rules! impl_string_common_methods {
             pub fn is_valid_ip_address(&self) -> bool {
                 self.as_inner().is_valid_ip_address()
             }
+
+            pub fn join_array(&self, parts: $crate::builtin::PackedStringArray) -> GodotString {
+                self.as_inner().join(parts)
+            }
+
+            pub fn json_escape(&self) -> GodotString {
+                self.as_inner().json_escape()
+            }
+
+            pub fn length(&self) -> usize {
+                self.as_inner().length() as usize
+            }
+
+            #[doc(alias = "lstrip")]
+            pub fn trim_start(&self) -> GodotString {
+                self.as_inner().lstrip(" ".into())
+            }
+
+            #[doc(alias = "lstrip")]
+            pub fn trim_start_matches<S: Into<GodotString>>(&self, chars: S) -> GodotString {
+                self.as_inner().lstrip(chars.into())
+            }
+
+            pub fn matches<S: Into<GodotString>>(&self, pattern: S) -> bool {
+                self.as_inner().match_(pattern.into())
+            }
+
+            pub fn matches_ignore_case<S: Into<GodotString>>(&self, pattern: S) -> bool {
+                self.as_inner().matchn(pattern.into())
+            }
+
+            pub fn md5_buffer(&self) -> $crate::builtin::PackedByteArray {
+                self.as_inner().md5_buffer()
+            }
+
+            pub fn md5_text(&self) -> GodotString {
+                self.as_inner().md5_text()
+            }
+
+            #[doc(alias = "path_join")]
+            pub fn push_path<S: Into<GodotString>>(&self, path: S) -> GodotString {
+                self.as_inner().path_join(path.into())
+            }
+
+            pub fn repeat(&self, n: usize) -> GodotString {
+                self.as_inner().repeat(n as i64)
+            }
+
+            pub fn replace<S1, S2>(&self, from: S1, to: S2) -> GodotString
+            where
+                S1: Into<GodotString>,
+                S2: Into<GodotString>,
+            {
+                self.as_inner().replace(from.into(), to.into())
+            }
+
+            #[doc(alias = "replacen")]
+            pub fn replace_ignore_case<S1, S2>(&self, from: S1, to: S2) -> GodotString
+            where
+                S1: Into<GodotString>,
+                S2: Into<GodotString>,
+            {
+                self.as_inner().replacen(from.into(), to.into())
+            }
+
+            pub fn substr<R: std::ops::RangeBounds<usize>>(&self, range: R) -> GodotString {
+                use std::ops::Bound;
+
+                let start = match range.start_bound() {
+                    Bound::Included(i) => *i as i64,
+                    Bound::Excluded(i) => (i + 1) as i64,
+                    Bound::Unbounded => 0,
+                };
+
+                let end = match range.end_bound() {
+                    Bound::Included(i) => *i as i64,
+                    Bound::Excluded(i) => (i - 1) as i64,
+                    Bound::Unbounded => -1,
+                };
+
+                self.as_inner().substr(start, end)
+            }
         }
     };
 }
@@ -283,3 +389,6 @@ pub(super) use impl_string_common_methods;
 // intentionally not added:
 // String.chr() - we already have From<char>.
 // format - we already have `format!`
+// left, right - just use `substr(..i)` or `substr(i..)`
+// lpad, rpad - can use `format!`
+// num, num_int64, num_scientific, num_uint64, pad_decimals, pad_zeros - can use `format!`
