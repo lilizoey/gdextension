@@ -6,7 +6,7 @@
 
 //! Generates a file for each Godot engine + builtin class
 
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use std::path::Path;
 
@@ -389,7 +389,7 @@ fn make_class(class: &Class, class_name: &TyName, ctx: &mut Context) -> Generate
         use crate::engine::notify::*;
         use crate::builtin::*;
         use crate::engine::native::*;
-        use crate::obj::{AsArg, Gd};
+        use crate::obj::Gd;
         use sys::GodotFfi as _;
         use std::ffi::c_void;
 
@@ -624,7 +624,7 @@ fn make_builtin_class(
         use godot_ffi as sys;
         use crate::builtin::*;
         use crate::engine::native::*;
-        use crate::obj::{AsArg, Gd};
+        use crate::obj::Gd;
         use crate::sys::GodotFfi as _;
         use crate::engine::Object;
 
@@ -665,7 +665,7 @@ fn make_native_structure(
         use godot_ffi as sys;
         use crate::builtin::*;
         use crate::engine::native::*;
-        use crate::obj::{AsArg, Gd};
+        use crate::obj::Gd;
         use crate::sys::GodotFfi as _;
         use crate::engine::Object;
 
@@ -1144,6 +1144,9 @@ fn make_function_definition(sig: &FnSignature, code: &FnCode, ctx: &mut Context)
     let is_varcall = code.variant_ffi.is_some();
     let [params, variant_types, arg_exprs, arg_names] =
         make_params(sig.method_args, is_varcall, ctx);
+    let args_indices: Vec<Literal> = (0..arg_exprs.len())
+        .map(Literal::usize_unsuffixed)
+        .collect();
 
     let fn_name = safe_ident(sig.function_name);
     let (prepare_arg_types, error_fn_context);
@@ -1234,8 +1237,13 @@ fn make_function_definition(sig: &FnSignature, code: &FnCode, ctx: &mut Context)
                 unsafe {
                     #init_code
 
+                    #[allow(clippy::let_unit_value)]
+                    let __args = (
+                        #( #arg_exprs, )*
+                    );
+
                     let __args = [
-                        #( #arg_exprs ),*
+                        #( sys::GodotFfi::as_arg_ptr(&__args.#args_indices) ),*
                     ];
 
                     let __args_ptr = __args.as_ptr();
@@ -1291,9 +1299,9 @@ fn make_params(
         let arg_expr = if is_varcall {
             quote! { <#param_ty as ToVariant>::to_variant(&#param_name) }
         } else if let RustTy::EngineClass { tokens: path, .. } = &param_ty {
-            quote! { <#path as AsArg>::as_arg_ptr(&#param_name) }
+            quote! { <#path as sys::GodotFuncMarshal>::try_into_via(#param_name).unwrap() }
         } else {
-            quote! { <#param_ty as sys::GodotFfi>::sys_const(&#param_name) }
+            quote! { <#param_ty as sys::GodotFuncMarshal>::try_into_via(#param_name).unwrap() }
         };
 
         params.push(quote! { #param_name: #param_ty });
@@ -1383,9 +1391,10 @@ fn make_return(
         }
         (false, None, Some(return_ty)) => {
             quote! {
-                <#return_ty as sys::GodotFfi>::from_sys_init_default(|return_ptr| {
+                let via = <<#return_ty as sys::GodotFuncMarshal>::Via as sys::GodotFfi>::from_sys_init_default(|return_ptr| {
                     #ptrcall_invocation
-                })
+                });
+                <#return_ty as sys::GodotFuncMarshal>::try_from_via(via).unwrap()
             }
         }
         (false, None, None) => {
