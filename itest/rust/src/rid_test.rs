@@ -36,6 +36,7 @@ fn canvas_set_parent() {
 
     server.free_rid(canvas);
     server.free_rid(viewport);
+    assert!(false);
 }
 
 #[itest]
