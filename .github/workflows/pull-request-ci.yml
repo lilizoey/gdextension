@@ -1,0 +1,12 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-full-ci:
+    if: github.event.pull_request.draft == 'false'
+    uses: ./.github/workflows/full-ci.yml
+  run-minimal-ci:
+    if: github.event.pull_request.draft == 'true'
+    uses: ./.github/workflows/minimal-ci.yml

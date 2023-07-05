@@ -8,6 +8,7 @@
 name: Full CI
 
 on:
+  workflow_call:
   push:
     branches:
       - staging

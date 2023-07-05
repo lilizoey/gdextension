@@ -9,9 +9,7 @@
 name: Minimal CI
 
 on:
-  pull_request:
-    branches:
-      - master
+  workflow_call:
 
 env:
   GDEXT_FEATURES: ''
