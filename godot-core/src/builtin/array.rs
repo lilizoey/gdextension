@@ -8,7 +8,6 @@ use godot_ffi as sys;
 
 use crate::builtin::meta::VariantMetadata;
 use crate::builtin::*;
-use crate::obj::Share;
 use crate::property::{Export, ExportInfo, Property, TypeStringHint};
 use std::fmt;
 use std::marker::PhantomData;
@@ -34,7 +33,7 @@ use sys::{ffi_methods, interface_fn, GodotFfi};
 /// Like in GDScript, `Array` acts as a reference type: multiple `Array` instances may
 /// refer to the same underlying array, and changes to one are visible in the other.
 ///
-/// To create a copy that shares data with the original array, use [`Share::share()`]. If you want
+/// To create a copy that shares data with the original array, use [`Clone::clone()`]. If you want
 /// to create a copy of the data, use [`duplicate_shallow()`][Self::duplicate_shallow] or
 /// [`duplicate_deep()`][Self::duplicate_deep].
 ///
@@ -245,7 +244,7 @@ impl<T: VariantMetadata> Array<T> {
     /// (such as `Array`, `Dictionary` and `Object`) will still refer to the same value.
     ///
     /// To create a deep copy, use [`duplicate_deep()`][Self::duplicate_deep] instead.
-    /// To create a new reference to the same array data, use [`share()`][Share::share].
+    /// To create a new reference to the same array data, use [`clone()`][Clone::clone].
     pub fn duplicate_shallow(&self) -> Self {
         let duplicate: VariantArray = self.as_inner().duplicate(false);
         // SAFETY: duplicate() returns a typed array with the same type as Self
@@ -257,7 +256,7 @@ impl<T: VariantMetadata> Array<T> {
     /// still be shallow copied.
     ///
     /// To create a shallow copy, use [`duplicate_shallow()`][Self::duplicate_shallow] instead.
-    /// To create a new reference to the same array data, use [`share()`][Share::share].
+    /// To create a new reference to the same array data, use [`clone()`][Clone::clone].
     pub fn duplicate_deep(&self) -> Self {
         let duplicate: VariantArray = self.as_inner().duplicate(true);
         // SAFETY: duplicate() returns a typed array with the same type as Self
@@ -592,7 +591,7 @@ impl<T: VariantMetadata + ToVariant> Array<T> {
 //
 // - `from_arg_ptr`
 //   Arrays are properly initialized through a `from_sys` call, but the ref-count should be incremented
-//   as that is the callee's responsibility. Which we do by calling `std::mem::forget(array.share())`.
+//   as that is the callee's responsibility. Which we do by calling `std::mem::forget(array.clone())`.
 unsafe impl<T: VariantMetadata> GodotFfi for Array<T> {
     ffi_methods! { type sys::GDExtensionTypePtr = *mut Opaque;
         fn from_sys;
@@ -609,7 +608,7 @@ unsafe impl<T: VariantMetadata> GodotFfi for Array<T> {
 
     unsafe fn from_arg_ptr(ptr: sys::GDExtensionTypePtr, _call_type: sys::PtrcallType) -> Self {
         let array = Self::from_sys(ptr);
-        std::mem::forget(array.share());
+        std::mem::forget(array.clone());
         array
     }
 }
@@ -626,8 +625,8 @@ impl<T: VariantMetadata> fmt::Debug for Array<T> {
 ///
 /// To create a (mostly) independent copy instead, see [`VariantArray::duplicate_shallow()`] and
 /// [`VariantArray::duplicate_deep()`].
-impl<T: VariantMetadata> Share for Array<T> {
-    fn share(&self) -> Self {
+impl<T: VariantMetadata> Clone for Array<T> {
+    fn clone(&self) -> Self {
         let array = unsafe {
             Self::from_sys_init(|self_ptr| {
                 let ctor = ::godot_ffi::builtin_fn!(array_construct_copy);
@@ -651,7 +650,7 @@ impl<T: VariantMetadata> Property for Array<T> {
     type Intermediate = Self;
 
     fn get_property(&self) -> Self::Intermediate {
-        self.share()
+        self.clone()
     }
 
     fn set_property(&mut self, value: Self::Intermediate) {

@@ -7,7 +7,6 @@
 use godot_ffi as sys;
 
 use crate::builtin::{inner, FromVariant, ToVariant, Variant};
-use crate::obj::Share;
 use crate::property::{Export, ExportInfo, Property};
 use std::fmt;
 use std::marker::PhantomData;
@@ -50,7 +49,7 @@ impl Dictionary {
     /// still be shallow copied.
     ///
     /// To create a shallow copy, use [`Self::duplicate_shallow`] instead. To create a new reference to
-    /// the same array data, use [`Share::share`].
+    /// the same array data, use [`Clone::clone`].
     ///
     /// _Godot equivalent: `dict.duplicate(true)`_
     pub fn duplicate_deep(&self) -> Self {
@@ -62,7 +61,7 @@ impl Dictionary {
     /// same value.
     ///
     /// To create a deep copy, use [`Self::duplicate_deep`] instead. To create a new reference to the
-    /// same dictionary data, use [`Share::share`].
+    /// same dictionary data, use [`Clone::clone`].
     ///
     /// _Godot equivalent: `dict.duplicate(false)`_
     pub fn duplicate_shallow(&self) -> Self {
@@ -263,7 +262,7 @@ impl Dictionary {
 // - `from_arg_ptr`
 //   Dictionaries are properly initialized through a `from_sys` call, but the ref-count should be
 //   incremented as that is the callee's responsibility. Which we do by calling
-//   `std::mem::forget(dictionary.share())`.
+//   `std::mem::forget(dictionary.clone())`.
 unsafe impl GodotFfi for Dictionary {
     ffi_methods! { type sys::GDExtensionTypePtr = *mut Opaque;
         fn from_sys;
@@ -280,7 +279,7 @@ unsafe impl GodotFfi for Dictionary {
 
     unsafe fn from_arg_ptr(ptr: sys::GDExtensionTypePtr, _call_type: sys::PtrcallType) -> Self {
         let dictionary = Self::from_sys(ptr);
-        std::mem::forget(dictionary.share());
+        std::mem::forget(dictionary.clone());
         dictionary
     }
 }
@@ -304,8 +303,8 @@ impl fmt::Debug for Dictionary {
 ///
 /// To create a (mostly) independent copy instead, see [`Dictionary::duplicate_shallow()`] and
 /// [`Dictionary::duplicate_deep()`].
-impl Share for Dictionary {
-    fn share(&self) -> Self {
+impl Clone for Dictionary {
+    fn clone(&self) -> Self {
         unsafe {
             Self::from_sys_init(|self_ptr| {
                 let ctor = sys::builtin_fn!(dictionary_construct_copy);
@@ -320,7 +319,7 @@ impl Property for Dictionary {
     type Intermediate = Self;
 
     fn get_property(&self) -> Self::Intermediate {
-        self.share()
+        self.clone()
     }
 
     fn set_property(&mut self, value: Self::Intermediate) {

@@ -7,7 +7,7 @@
 use godot::bind::{godot_api, GodotClass};
 use godot::builtin::{varray, Callable, ToVariant, Variant};
 use godot::engine::Object;
-use godot::obj::{Gd, Share};
+use godot::obj::Gd;
 use godot::prelude::GodotString;
 use godot::test::itest;
 
@@ -65,7 +65,7 @@ fn callable_object_method() {
     let obj = Gd::<CallableTestObj>::new_default();
     let callable = obj.callable("foo");
 
-    assert_eq!(callable.object(), Some(obj.share().upcast::<Object>()));
+    assert_eq!(callable.object(), Some(obj.clone().upcast::<Object>()));
     assert_eq!(callable.object_id(), Some(obj.instance_id()));
     assert_eq!(callable.method_name(), Some("foo".into()));
 

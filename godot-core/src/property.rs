@@ -12,7 +12,7 @@ use crate::engine::global::PropertyHint;
 
 /// Trait implemented for types that can be used as `#[var]` fields. This creates a copy of the
 /// value, for some type-specific definition of "copy". For example, `Array`, `Dictionary` and `Gd` are
-/// returned via `Share::share()` instead of copying the actual data.
+/// returned via `Clone::clone()`, which returns a reference instead of copying the actual data.
 pub trait Property {
     type Intermediate;
 

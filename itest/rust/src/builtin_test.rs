@@ -43,7 +43,7 @@ fn test_builtins_array() {
 #[itest]
 fn test_builtins_callable() {
     let obj = Node2D::new_alloc();
-    let cb = Callable::from_object_method(obj.share(), "set_position");
+    let cb = Callable::from_object_method(obj.clone(), "set_position");
     let inner: InnerCallable = cb.as_inner();
 
     assert!(!inner.is_null());

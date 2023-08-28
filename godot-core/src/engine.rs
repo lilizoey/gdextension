@@ -108,14 +108,12 @@ where
     where
         T: GodotClass + Inherits<Node>,
     {
-        // TODO this could be implemented without share(), but currently lacks the proper bounds
+        // TODO this could be implemented without clone(), but currently lacks the proper bounds
         // This would need more sophisticated upcast design, e.g. T::upcast_{ref|mut}::<U>() for indirect relations
         // to make the indirect Deref more explicit
 
-        use crate::obj::Share;
-
         let path = path.into();
-        let node = self.share().upcast::<Node>();
+        let node = self.clone().upcast::<Node>();
 
         <Node as NodeExt>::try_get_node_as(&*node, path)
     }
