@@ -35,6 +35,10 @@ pub struct Base<T: GodotClass> {
 }
 
 impl<T: GodotClass> Base<T> {
+    pub(crate) unsafe fn from_base(base: &Base<T>) -> Base<T> {
+        Base::from_obj(Gd::from_obj_sys_weak(base.obj_sys()))
+    }
+
     // Note: not &mut self, to only borrow one field and not the entire struct
     pub(crate) unsafe fn from_sys(base_ptr: sys::GDExtensionObjectPtr) -> Self {
         assert!(!base_ptr.is_null(), "instance base is null pointer");
