@@ -47,6 +47,7 @@ func _ready():
 		load("res://SpecialTests.gd").new(),
 	]
 
+	print("Executing special case tests...")
 	for suite in special_case_test_suites:
 		for method in suite.get_method_list():
 			var method_name: String = method.name

@@ -385,6 +385,7 @@ unsafe fn varcall_return<R: ToVariant>(
     err: *mut sys::GDExtensionCallError,
 ) {
     let ret_variant = ret_val.to_variant();
+    debug_assert!(!err.is_null(), "err is null");
     *(ret as *mut Variant) = ret_variant;
     (*err).error = sys::GDEXTENSION_CALL_OK;
 }
@@ -402,6 +403,7 @@ pub(crate) unsafe fn varcall_return_checked<R: ToVariant>(
     if let Ok(ret_val) = ret_val {
         varcall_return(ret_val, ret, err);
     } else {
+        debug_assert!(!err.is_null(), "err is null");
         *err = sys::default_call_error();
         (*err).error = sys::GDEXTENSION_CALL_ERROR_INVALID_ARGUMENT;
     }
@@ -418,6 +420,11 @@ unsafe fn ptrcall_arg<P: sys::GodotFuncMarshal, const N: isize>(
     method_name: &str,
     call_type: sys::PtrcallType,
 ) -> P {
+    debug_assert!(!args_ptr.is_null(), "{method_name}: `args_ptr` is null");
+    debug_assert!(
+        !(*args_ptr.offset(N)).is_null(),
+        "{method_name}: `*args_ptr.offset(N)` is null"
+    );
     P::try_from_arg(sys::force_mut_ptr(*args_ptr.offset(N)), call_type)
         .unwrap_or_else(|e| param_error::<P>(method_name, N as i32, &e))
 }
@@ -433,6 +440,7 @@ unsafe fn ptrcall_return<R: sys::GodotFuncMarshal + std::fmt::Debug>(
     method_name: &str,
     call_type: sys::PtrcallType,
 ) {
+    debug_assert!(!ret.is_null(), "{method_name}: ret pointer is null");
     ret_val
         .try_return(ret, call_type)
         .unwrap_or_else(|ret_val| return_error::<R>(method_name, &ret_val))
