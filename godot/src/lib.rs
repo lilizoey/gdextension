@@ -220,3 +220,5 @@ pub use godot_core::private;
 
 /// Often-imported symbols.
 pub mod prelude;
+
+pub use godot_core::register_reload;

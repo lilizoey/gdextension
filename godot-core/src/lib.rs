@@ -10,10 +10,15 @@ mod storage;
 
 pub mod builder;
 pub mod builtin;
+pub mod hack;
 pub mod init;
 pub mod log;
 pub mod obj;
 pub mod property;
+
+pub fn is_hot_reload_enabled() -> bool {
+    true
+}
 
 #[doc(hidden)]
 #[path = "deprecated.rs"]
