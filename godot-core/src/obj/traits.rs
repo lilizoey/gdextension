@@ -500,7 +500,7 @@ pub mod cap {
     }
 
     /// Auto-implemented for `#[godot_api] impl XyVirtual for MyClass` blocks
-    pub trait ImplementsGodotVirtual: GodotClass {
+    pub trait ImplementsGodotVirtual<const UNSAFE: bool>: GodotClass {
         #[doc(hidden)]
         fn __virtual_call(_name: &str) -> sys::GDExtensionClassCallVirtual;
     }

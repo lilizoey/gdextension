@@ -94,7 +94,7 @@ pub(crate) fn iterate_plugins(mut visitor: impl FnMut(&ClassPlugin)) {
 
 // If someone forgets #[godot_api], this causes a compile error, rather than virtual functions not being called at runtime.
 #[allow(non_camel_case_types)]
-pub trait You_forgot_the_attribute__godot_api {}
+pub trait You_forgot_the_attribute__godot_api<const UNSAFE: bool> {}
 
 pub use crate::obj::rtti::ObjectRtti;
 

@@ -10,7 +10,9 @@ use crate::framework::itest;
 use godot::builtin::{Rect2, Rid, Variant};
 use godot::engine::native::{AudioFrame, CaretInfo, Glyph, ObjectId};
 use godot::engine::text_server::Direction;
-use godot::engine::{ITextServerExtension, TextServer, TextServerExtension};
+use godot::engine::{
+    ITextServerExtension, IUnsafeTextServerExtension, TextServer, TextServerExtension,
+};
 use godot::obj::{Base, NewGd};
 use godot::register::{godot_api, GodotClass};
 
@@ -64,8 +66,11 @@ impl ITextServerExtension for TestTextServer {
     fn shaped_text_get_glyph_count(&self, _shaped: Rid) -> i64 {
         self.glyphs.len() as i64
     }
+}
 
-    unsafe fn shaped_text_get_glyphs(&self, _shaped: Rid) -> *const Glyph {
+#[godot_api]
+unsafe impl IUnsafeTextServerExtension for TestTextServer {
+    fn shaped_text_get_glyphs(&self, _shaped: Rid) -> *const Glyph {
         self.glyphs.as_ptr()
     }
 }

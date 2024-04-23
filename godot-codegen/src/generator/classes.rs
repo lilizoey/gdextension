@@ -254,8 +254,7 @@ fn make_class_module_file(classes_and_modules: Vec<GeneratedClassModule>) -> Tok
 
         let class_decl = quote! {
             #vis mod #module_name;
-            pub use #module_name::re_export::#class_name;
-            pub use #module_name::re_export::#virtual_trait_name;
+            pub use #module_name::re_export::*;
         };
         class_decls.push(class_decl);
 
@@ -393,7 +392,7 @@ fn make_class_methods(class: &Class, methods: &[ClassMethod], ctx: &mut Context)
 
     let definitions = methods
         .iter()
-        .map(|method| make_class_method_definition(class, method, &get_method_table, ctx));
+        .filter_map(|method| make_class_method_definition(class, method, &get_method_table, ctx));
 
     FnDefinitions::expand(definitions)
 }
@@ -403,9 +402,9 @@ fn make_class_method_definition(
     method: &ClassMethod,
     get_method_table: &Ident,
     ctx: &mut Context,
-) -> FnDefinition {
+) -> Option<FnDefinition> {
     let FnDirection::Outbound { hash } = method.direction() else {
-        return FnDefinition::none();
+        return None;
     };
 
     let rust_class_name = class.name().rust_ty.to_string();
@@ -463,7 +462,7 @@ fn make_class_method_definition(
         )
     };
 
-    functions_common::make_function_definition(
+    Some(functions_common::make_function_definition(
         method,
         &FnCode {
             receiver,
@@ -471,5 +470,6 @@ fn make_class_method_definition(
             ptrcall_invocation,
         },
         None,
-    )
+        None,
+    ))
 }

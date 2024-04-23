@@ -602,6 +602,7 @@ fn convert_to_match_expression_or_none(tokens: Option<TokenStream>) -> TokenStre
 
 /// Codegen for `#[godot_api] impl GodotExt for MyType`
 fn transform_trait_impl(original_impl: venial::Impl) -> ParseResult<TokenStream> {
+    let is_unsafe = original_impl.tk_unsafe.is_some();
     let (class_name, trait_path) = util::validate_trait_impl_virtual(&original_impl, "godot_api")?;
     let class_name_obj = util::class_name_obj(&class_name);
 
@@ -832,9 +833,10 @@ fn transform_trait_impl(original_impl: venial::Impl) -> ParseResult<TokenStream>
 
     // If there is no ready() method explicitly overridden, we need to add one, to ensure that __before_ready() is called to
     // initialize the OnReady fields.
-    if !virtual_methods
-        .iter()
-        .any(|(sig, _)| sig.method_name == "ready")
+    if !is_unsafe
+        && !virtual_methods
+            .iter()
+            .any(|(sig, _)| sig.method_name == "ready")
     {
         let signature_info = SignatureInfo::fn_ready();
 
@@ -863,6 +865,34 @@ fn transform_trait_impl(original_impl: venial::Impl) -> ParseResult<TokenStream>
     let on_notification_fn = convert_to_match_expression_or_none(on_notification_fn);
     let get_property_fn = convert_to_match_expression_or_none(get_property_fn);
     let set_property_fn = convert_to_match_expression_or_none(set_property_fn);
+    let plugin_add = if is_unsafe {
+        quote! {
+            ::godot::sys::plugin_add!(__GODOT_PLUGIN_REGISTRY in #prv; #prv::ClassPlugin {
+                class_name: #class_name_obj,
+                item: #prv::PluginItem::IUnsafeTraitImpl {
+                    get_virtual_fn: #prv::callbacks::get_virtual::<#class_name, true>,
+                },
+                init_level: <#class_name as ::godot::obj::GodotClass>::INIT_LEVEL,
+            });
+        }
+    } else {
+        quote! {
+            ::godot::sys::plugin_add!(__GODOT_PLUGIN_REGISTRY in #prv; #prv::ClassPlugin {
+                class_name: #class_name_obj,
+                item: #prv::PluginItem::ITraitImpl {
+                    user_register_fn: #register_fn,
+                    user_create_fn: #create_fn,
+                    user_recreate_fn: #recreate_fn,
+                    user_to_string_fn: #to_string_fn,
+                    user_on_notification_fn: #on_notification_fn,
+                    user_set_fn: #set_property_fn,
+                    user_get_fn: #get_property_fn,
+                    get_virtual_fn: #prv::callbacks::get_virtual::<#class_name, false>,
+                },
+                init_level: <#class_name as ::godot::obj::GodotClass>::INIT_LEVEL,
+            });
+        }
+    };
 
     let result = quote! {
         #original_impl
@@ -873,9 +903,9 @@ fn transform_trait_impl(original_impl: venial::Impl) -> ParseResult<TokenStream>
         #get_property_impl
         #set_property_impl
 
-        impl ::godot::private::You_forgot_the_attribute__godot_api for #class_name {}
+        impl ::godot::private::You_forgot_the_attribute__godot_api<#is_unsafe> for #class_name {}
 
-        impl ::godot::obj::cap::ImplementsGodotVirtual for #class_name {
+        impl ::godot::obj::cap::ImplementsGodotVirtual<#is_unsafe> for #class_name {
             fn __virtual_call(name: &str) -> ::godot::sys::GDExtensionClassCallVirtual {
                 //println!("virtual_call: {}.{}", std::any::type_name::<Self>(), name);
                 use ::godot::obj::UserClass as _;
@@ -886,25 +916,14 @@ fn transform_trait_impl(original_impl: venial::Impl) -> ParseResult<TokenStream>
                        #(#virtual_method_cfg_attrs)*
                        #virtual_method_names => #virtual_method_callbacks,
                     )*
+                    // Call to the safe trait.
+                    _ if #is_unsafe => { <#class_name as ::godot::obj::cap::ImplementsGodotVirtual<false>>::__virtual_call(name) },
                     _ => None,
                 }
             }
         }
 
-        ::godot::sys::plugin_add!(__GODOT_PLUGIN_REGISTRY in #prv; #prv::ClassPlugin {
-            class_name: #class_name_obj,
-            item: #prv::PluginItem::ITraitImpl {
-                user_register_fn: #register_fn,
-                user_create_fn: #create_fn,
-                user_recreate_fn: #recreate_fn,
-                user_to_string_fn: #to_string_fn,
-                user_on_notification_fn: #on_notification_fn,
-                user_set_fn: #set_property_fn,
-                user_get_fn: #get_property_fn,
-                get_virtual_fn: #prv::callbacks::get_virtual::<#class_name>,
-            },
-            init_level: <#class_name as ::godot::obj::GodotClass>::INIT_LEVEL,
-        });
+        #plugin_add
     };
 
     Ok(result)

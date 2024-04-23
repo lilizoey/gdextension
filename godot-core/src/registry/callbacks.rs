@@ -98,7 +98,7 @@ pub unsafe extern "C" fn free<T: GodotClass>(
     crate::storage::destroy_storage::<T>(instance);
 }
 
-pub unsafe extern "C" fn get_virtual<T: cap::ImplementsGodotVirtual>(
+pub unsafe extern "C" fn get_virtual<T: cap::ImplementsGodotVirtual<UNSAFE>, const UNSAFE: bool>(
     _class_user_data: *mut std::ffi::c_void,
     name: sys::GDExtensionConstStringNamePtr,
 ) -> sys::GDExtensionClassCallVirtual {

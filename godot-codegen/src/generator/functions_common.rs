@@ -8,7 +8,7 @@
 use crate::generator::default_parameters;
 use crate::models::domain::{FnParam, FnQualifier, Function, RustTy};
 use crate::util::safe_ident;
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 pub struct FnReceiver {
@@ -42,16 +42,10 @@ pub struct FnCode {
 pub struct FnDefinition {
     pub functions: TokenStream,
     pub builders: TokenStream,
+    pub function_safety: FunctionSafety,
 }
 
 impl FnDefinition {
-    pub fn none() -> FnDefinition {
-        FnDefinition {
-            functions: TokenStream::new(),
-            builders: TokenStream::new(),
-        }
-    }
-
     pub fn into_functions_only(self) -> TokenStream {
         assert!(
             self.builders.is_empty(),
@@ -85,7 +79,8 @@ impl FnDefinitions {
 pub fn make_function_definition(
     sig: &dyn Function,
     code: &FnCode,
-    safety_doc: Option<TokenStream>,
+    custom_function_safety_doc: Option<String>,
+    custom_trait_safety_doc: Option<String>,
 ) -> FnDefinition {
     let has_default_params = default_parameters::function_uses_default_params(sig);
     let vis = if has_default_params {
@@ -96,25 +91,21 @@ pub fn make_function_definition(
         make_vis(sig.is_private())
     };
 
-    // Functions are marked unsafe as soon as raw pointers are involved, irrespectively of whether they appear in parameter or return type
-    // position. In cases of virtual functions called by Godot, a returned pointer must be valid and of the expected type. It might be possible
-    // to only use `unsafe` for pointers in parameters (for outbound calls), and in return values (for virtual calls). Or technically more
-    // correct, make the entire trait unsafe as soon as one function can return pointers, but that's very unergonomic and non-local.
-    // Thus, let's keep things simple and more conservative.
-    let (maybe_unsafe, maybe_safety_doc) = if let Some(safety_doc) = safety_doc {
-        (quote! { unsafe }, safety_doc)
-    } else if function_uses_pointers(sig) {
-        (
-            quote! { unsafe },
-            quote! {
-                /// # Safety
-                ///
-                /// This method has automatically been marked `unsafe` because it accepts raw pointers as parameters.
-                /// If Godot does not document any safety requirements, make sure you understand the underlying semantics.
-            },
-        )
+    let mut function_safety = FunctionSafety::from_sig(sig);
+
+    function_safety.custom_function_safety_doc = custom_function_safety_doc;
+    function_safety.custom_trait_safety_doc = custom_trait_safety_doc;
+
+    let maybe_unsafe = function_safety.function_unsafe();
+    let maybe_safety_doc = function_safety.function_safety_doc();
+
+    let maybe_safety_doc = if !maybe_safety_doc.is_empty() {
+        quote! {
+            /// # Safety
+            #( #[doc = #maybe_safety_doc] )*
+        }
     } else {
-        (TokenStream::new(), TokenStream::new())
+        TokenStream::new()
     };
 
     let [params, param_types, arg_names] = make_params_exprs(sig.params());
@@ -244,6 +235,7 @@ pub fn make_function_definition(
             #default_fn_code
         },
         builders: default_structs_code,
+        function_safety,
     }
 }
 
@@ -313,14 +305,94 @@ fn make_params_exprs(method_args: &[FnParam]) -> [Vec<TokenStream>; 3] {
     [params, param_types, arg_names]
 }
 
-fn function_uses_pointers(sig: &dyn Function) -> bool {
-    let has_pointer_params = sig
-        .params()
-        .iter()
-        .any(|param| matches!(param.type_, RustTy::RawPointer { .. }));
+/// Whether a function can be completely safe, or if some `unsafe` is needed.
+pub struct FunctionSafety {
+    /// The function has pointer arguments, and so must be `unsafe`.
+    pub pointer_args: Vec<Ident>,
+    /// The function returns a pointer, and so must be declared in an `unsafe` trait.
+    pub has_pointer_return: bool,
 
-    let has_pointer_return = matches!(sig.return_value().type_, Some(RustTy::RawPointer { .. }));
+    /// The function has a custom safety document, and so must be `unsafe`.
+    pub custom_function_safety_doc: Option<String>,
+    /// The function has a custom trait safety document, and so must be declared in an `unsafe` trait.
+    pub custom_trait_safety_doc: Option<String>,
+}
 
-    // No short-circuiting due to variable decls, but that's fine.
-    has_pointer_params || has_pointer_return
+impl FunctionSafety {
+    fn from_sig(sig: &dyn Function) -> Self {
+        // A function must be an unsafe function if any of its arguments are pointers, since the caller must provide valid pointers.
+        let pointer_args = sig
+            .params()
+            .iter()
+            .filter(|param| matches!(param.type_, RustTy::RawPointer { .. }))
+            .map(|param| param.name.clone())
+            .collect();
+
+        // A function must be declared in an unsafe trait if it returns a pointer, since the implementor must return valid pointers.
+        let has_pointer_return =
+            matches!(sig.return_value().type_, Some(RustTy::RawPointer { .. }));
+
+        Self {
+            pointer_args,
+            has_pointer_return,
+            custom_function_safety_doc: None,
+            custom_trait_safety_doc: None,
+        }
+    }
+
+    pub fn is_function_unsafe(&self) -> bool {
+        !self.pointer_args.is_empty() || self.custom_function_safety_doc.is_some()
+    }
+
+    pub fn function_unsafe(&self) -> TokenStream {
+        if self.is_function_unsafe() {
+            quote! { unsafe }
+        } else {
+            TokenStream::new()
+        }
+    }
+
+    pub fn function_safety_doc(&self) -> Vec<String> {
+        let Self {
+            pointer_args,
+            custom_function_safety_doc,
+            ..
+        } = self;
+
+        let mut doc = Vec::new();
+
+        for arg in pointer_args {
+            doc.push(format!("* The caller must ensure {arg} is a valid pointer according to what Godot expects this function to be called with."));
+        }
+
+        if let Some(custom_doc) = custom_function_safety_doc.as_ref() {
+            doc.push(custom_doc.clone())
+        }
+
+        doc
+    }
+
+    pub fn is_trait_unsafe(&self) -> bool {
+        self.has_pointer_return || self.custom_trait_safety_doc.is_some()
+    }
+
+    pub fn trait_safety_doc(&self) -> Vec<String> {
+        let Self {
+            has_pointer_return,
+            custom_trait_safety_doc,
+            ..
+        } = self;
+
+        let mut doc = Vec::new();
+
+        if *has_pointer_return {
+            doc.push(format!("This function returns a pointer, the implementer must ensure the returned pointer is valid for what Godot expects."))
+        }
+
+        if let Some(custom_doc) = custom_trait_safety_doc.as_ref() {
+            doc.push(custom_doc.clone())
+        }
+
+        doc
+    }
 }

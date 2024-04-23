@@ -67,7 +67,11 @@ pub fn make_class_doc(
     )
 }
 
-pub fn make_virtual_trait_doc(trait_name_str: &str, class_name: &TyName) -> String {
+pub fn make_virtual_trait_doc(
+    trait_name_str: &str,
+    class_name: &TyName,
+    has_unsafe: bool,
+) -> String {
     let TyName { rust_ty, godot_ty } = class_name;
 
     let online_link = format!(
@@ -75,9 +79,23 @@ pub fn make_virtual_trait_doc(trait_name_str: &str, class_name: &TyName) -> Stri
         godot_ty.to_ascii_lowercase()
     );
 
-    let notes = special_cases::get_interface_extra_docs(trait_name_str)
-        .map(|notes| format!("# Specific notes for this interface\n\n{}", notes))
-        .unwrap_or_default();
+    let mut notes = Vec::new();
+
+    notes.extend(
+        special_cases::get_interface_extra_docs(trait_name_str)
+            .map(|notes| format!("# Specific notes for this interface\n\n{}", notes)),
+    );
+
+    if has_unsafe {
+        let unsafe_trait = class_name.unsafe_virtual_trait_name();
+        notes.push(format!(
+            "# Unsafe Trait\
+            \n\n\
+            This class has some methods which can only be implemented through the unsafe trait [{unsafe_trait}]"
+        ))
+    }
+
+    let notes = notes.join("\n");
 
     format!(
         "Virtual methods for class [`{rust_ty}`][crate::engine::{rust_ty}].\

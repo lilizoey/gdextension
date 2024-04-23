@@ -724,6 +724,10 @@ impl TyName {
     pub fn virtual_trait_name(&self) -> String {
         format!("I{}", self.rust_ty)
     }
+
+    pub fn unsafe_virtual_trait_name(&self) -> String {
+        format!("IUnsafe{}", self.rust_ty)
+    }
 }
 
 impl ToTokens for TyName {

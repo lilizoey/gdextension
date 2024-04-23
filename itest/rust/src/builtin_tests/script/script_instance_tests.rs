@@ -11,8 +11,8 @@ use godot::builtin::meta::{ClassName, FromGodot, MethodInfo, PropertyInfo, ToGod
 use godot::builtin::{GString, StringName, Variant, VariantType};
 use godot::engine::global::{MethodFlags, PropertyHint, PropertyUsageFlags};
 use godot::engine::{
-    create_script_instance, IScriptExtension, Object, Script, ScriptExtension, ScriptInstance,
-    ScriptLanguage,
+    create_script_instance, IScriptExtension, IUnsafeScriptExtension, Object, Script,
+    ScriptExtension, ScriptInstance, ScriptLanguage,
 };
 use godot::obj::{Base, Gd, WithBaseField};
 use godot::register::{godot_api, GodotClass};
@@ -26,12 +26,15 @@ struct TestScript {
 
 #[godot_api]
 impl IScriptExtension for TestScript {
-    unsafe fn instance_create(&self, _for_object: Gd<Object>) -> *mut c_void {
-        create_script_instance(TestScriptInstance::new(self.to_gd().upcast()))
-    }
-
     fn can_instantiate(&self) -> bool {
         true
+    }
+}
+
+#[godot_api]
+unsafe impl IUnsafeScriptExtension for TestScript {
+    fn instance_create(&self, _for_object: Gd<Object>) -> *mut c_void {
+        create_script_instance(TestScriptInstance::new(self.to_gd().upcast()))
     }
 }
 

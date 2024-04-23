@@ -79,6 +79,7 @@ pub(crate) fn make_utility_function_definition(function: &UtilityFunction) -> To
             ptrcall_invocation,
         },
         None,
+        None,
     );
 
     // Utility functions have no builders.

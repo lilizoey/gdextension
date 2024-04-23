@@ -182,6 +182,13 @@ pub enum PluginItem {
             p_name: sys::GDExtensionConstStringNamePtr,
         ) -> sys::GDExtensionClassCallVirtual,
     },
+
+    IUnsafeTraitImpl {
+        get_virtual_fn: unsafe extern "C" fn(
+            p_userdata: *mut std::os::raw::c_void,
+            p_name: sys::GDExtensionConstStringNamePtr,
+        ) -> sys::GDExtensionClassCallVirtual,
+    },
 }
 
 /// Represents a class who is currently loaded and retained in memory.
@@ -204,6 +211,7 @@ struct ClassRegistrationInfo {
     user_register_fn: Option<ErasedRegisterFn>,
     default_virtual_fn: sys::GDExtensionClassGetVirtual, // Option (set if there is at least one OnReady field)
     user_virtual_fn: sys::GDExtensionClassGetVirtual, // Option (set if there is a `#[godot_api] impl I*`)
+    unsafe_user_virtual_fn: sys::GDExtensionClassGetVirtual,
 
     /// Godot low-level class creation parameters.
     #[cfg(before_api = "4.2")]
@@ -218,7 +226,7 @@ struct ClassRegistrationInfo {
     is_editor_plugin: bool,
 
     /// Used to ensure that each component is only filled once.
-    component_already_filled: [bool; 3],
+    component_already_filled: [bool; 4],
 }
 
 impl ClassRegistrationInfo {
@@ -230,6 +238,7 @@ impl ClassRegistrationInfo {
             PluginItem::Struct { .. } => 0,
             PluginItem::InherentImpl { .. } => 1,
             PluginItem::ITraitImpl { .. } => 2,
+            PluginItem::IUnsafeTraitImpl { .. } => 3,
         };
 
         if self.component_already_filled[index] {
@@ -247,7 +256,7 @@ impl ClassRegistrationInfo {
 // Currently dead code, but will be needed for builder API. Don't remove.
 pub fn register_class<
     T: cap::GodotDefault
-        + cap::ImplementsGodotVirtual
+        + cap::ImplementsGodotVirtual<false>
         + cap::GodotToString
         + cap::GodotNotification
         + cap::GodotRegisterClass
@@ -272,7 +281,7 @@ pub fn register_class<
         unreference_func: Some(callbacks::unreference::<T>),
         create_instance_func: Some(callbacks::create::<T>),
         free_instance_func: Some(callbacks::free::<T>),
-        get_virtual_func: Some(callbacks::get_virtual::<T>),
+        get_virtual_func: Some(callbacks::get_virtual::<T, false>),
         get_rid_func: None,
         class_userdata: ptr::null_mut(), // will be passed to create fn, but global per class
         ..default_creation_info()
@@ -293,6 +302,7 @@ pub fn register_class<
         }),
         user_virtual_fn: None,
         default_virtual_fn: None,
+        unsafe_user_virtual_fn: None,
         godot_params,
         init_level: T::INIT_LEVEL,
         is_editor_plugin: false,
@@ -471,6 +481,9 @@ fn fill_class_info(item: PluginItem, c: &mut ClassRegistrationInfo) {
             c.godot_params.get_func = user_get_fn;
             c.user_virtual_fn = Some(get_virtual_fn);
         }
+        PluginItem::IUnsafeTraitImpl { get_virtual_fn } => {
+            c.unsafe_user_virtual_fn = Some(get_virtual_fn)
+        }
     }
     // out!("|   reg (after):     {c:?}");
     // out!();
@@ -498,7 +511,10 @@ fn register_class_raw(mut info: ClassRegistrationInfo) {
     // Register virtual functions -- if the user provided some via #[godot_api], take those; otherwise, use the
     // ones generated alongside #[derive(GodotClass)]. The latter can also be null, if no OnReady is provided.
     if info.godot_params.get_virtual_func.is_none() {
-        info.godot_params.get_virtual_func = info.user_virtual_fn.or(info.default_virtual_fn);
+        info.godot_params.get_virtual_func = info
+            .unsafe_user_virtual_fn
+            .or(info.user_virtual_fn)
+            .or(info.default_virtual_fn);
     }
 
     // The explicit () type notifies us if Godot API ever adds a return type.
@@ -609,6 +625,7 @@ fn default_registration_info(class_name: ClassName) -> ClassRegistrationInfo {
         user_register_fn: None,
         default_virtual_fn: None,
         user_virtual_fn: None,
+        unsafe_user_virtual_fn: None,
         godot_params: default_creation_info(),
         init_level: InitLevel::Scene,
         is_editor_plugin: false,

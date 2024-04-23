@@ -14,6 +14,8 @@ use crate::util::ident;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
+use super::functions_common::FnDefinition;
+
 pub fn make_virtual_methods_trait(
     class: &Class,
     all_base_names: &[TyName],
@@ -23,18 +25,118 @@ pub fn make_virtual_methods_trait(
 ) -> TokenStream {
     let trait_name = ident(trait_name_str);
 
-    let virtual_method_fns = make_all_virtual_methods(class, all_base_names, view);
+    let mut virtual_method_fns = make_all_virtual_methods(class, all_base_names, view);
     let special_virtual_methods = special_virtual_methods(notification_enum_name);
 
-    let trait_doc = docs::make_virtual_trait_doc(trait_name_str, class.name());
+    let has_unsafe = !virtual_method_fns.unsafe_trait_methods.is_empty();
 
-    quote! {
-        #[doc = #trait_doc]
+    let safe_trait_doc = docs::make_virtual_trait_doc(trait_name_str, class.name(), has_unsafe);
+
+    let safe_trait_methods = virtual_method_fns
+        .safe_trait_methods
+        .into_iter()
+        .map(FnDefinition::into_functions_only)
+        .collect::<Vec<_>>();
+
+    let safe_trait = quote! {
+        #[doc = #safe_trait_doc]
         #[allow(unused_variables)]
         #[allow(clippy::unimplemented)]
-        pub trait #trait_name: crate::obj::GodotClass + crate::private::You_forgot_the_attribute__godot_api {
+        pub trait #trait_name: crate::obj::GodotClass + crate::private::You_forgot_the_attribute__godot_api<false> {
             #special_virtual_methods
-            #( #virtual_method_fns )*
+            #( #safe_trait_methods )*
+        }
+    };
+
+    let unsafe_trait_name = ident(&class.name().unsafe_virtual_trait_name());
+
+    let unsafe_trait_safety_doc = virtual_method_fns
+        .unsafe_trait_methods
+        .iter()
+        .map(|method| method.function_safety.trait_safety_doc())
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let unsafe_trait_methods = virtual_method_fns
+        .unsafe_trait_methods
+        .into_iter()
+        .map(FnDefinition::into_functions_only)
+        .collect::<Vec<_>>();
+
+    let unsafe_trait = if !unsafe_trait_methods.is_empty() {
+        quote! {
+            /// # Safety
+            #( #[doc = #unsafe_trait_safety_doc] )*
+            #[allow(unused_variables)]
+            #[allow(clippy::unimplemented)]
+            pub unsafe trait #unsafe_trait_name: crate::obj::GodotClass + crate::private::You_forgot_the_attribute__godot_api<true> + #trait_name {
+                #( #unsafe_trait_methods )*
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
+
+    quote! {
+        #safe_trait
+        #unsafe_trait
+    }
+}
+
+struct VirtualMethodTrait {
+    trait_name: Ident,
+    is_unsafe: bool,
+
+    special_virtual_methods: Option<TokenStream>,
+    virtual_methods: Vec<TokenStream>,
+}
+
+impl VirtualMethodTrait {
+    fn new(class: &Class, is_unsafe: bool) -> Self {
+        let trait_name = if is_unsafe {
+            class.name().unsafe_virtual_trait_name()
+        } else {
+            class.name().virtual_trait_name()
+        };
+
+        Self {
+            trait_name: ident(&trait_name),
+            is_unsafe,
+            special_virtual_methods: None,
+            virtual_methods: Vec::new(),
+        }
+    }
+
+    fn set_virtual_methods(&mut self, special_virtual_methods: TokenStream) {
+        self.special_virtual_methods = Some(special_virtual_methods);
+    }
+
+    fn extend_virtual_methods(&mut self, virtual_methods: Vec<TokenStream>) {
+        self.virtual_methods.extend(virtual_methods.into_iter())
+    }
+
+    fn into_token_stream(self, trait_doc: String) -> TokenStream {
+        let Self {
+            is_unsafe,
+            trait_name,
+            special_virtual_methods,
+            virtual_methods,
+        } = self;
+
+        let unsafe_ = if is_unsafe {
+            Some(quote! { unsafe })
+        } else {
+            None
+        };
+
+        quote! {
+            #[doc = #trait_doc]
+            #[allow(unused_variables)]
+            #[allow(clippy::unimplemented)]
+            pub #unsafe_ trait #trait_name: crate::obj::GodotClass + crate::private::You_forgot_the_attribute__godot_api {
+                #special_virtual_methods
+                #( #virtual_methods )*
+            }
         }
     }
 }
@@ -107,7 +209,7 @@ fn special_virtual_methods(notification_enum_name: &Ident) -> TokenStream {
     }
 }
 
-fn make_virtual_method(method: &ClassMethod) -> Option<TokenStream> {
+fn make_virtual_method(method: &ClassMethod) -> Option<FnDefinition> {
     if !method.is_virtual() {
         return None;
     }
@@ -125,34 +227,51 @@ fn make_virtual_method(method: &ClassMethod) -> Option<TokenStream> {
             ptrcall_invocation: TokenStream::new(),
         },
         None,
+        None,
     );
 
-    // Virtual methods have no builders.
-    Some(definition.into_functions_only())
+    Some(definition)
+}
+
+struct VirtualMethods {
+    safe_trait_methods: Vec<FnDefinition>,
+    unsafe_trait_methods: Vec<FnDefinition>,
 }
 
 fn make_all_virtual_methods(
     class: &Class,
     all_base_names: &[TyName],
     view: &ApiView,
-) -> Vec<TokenStream> {
-    let mut all_tokens = vec![];
+) -> VirtualMethods {
+    let mut safe_trait_methods = Vec::new();
+    let mut unsafe_trait_methods = Vec::new();
 
     for method in class.methods.iter() {
         // Assumes that inner function filters on is_virtual.
-        if let Some(tokens) = make_virtual_method(method) {
-            all_tokens.push(tokens);
+        if let Some(method) = make_virtual_method(method) {
+            if method.function_safety.is_trait_unsafe() {
+                unsafe_trait_methods.push(method)
+            } else {
+                safe_trait_methods.push(method)
+            }
         }
     }
 
     for base_name in all_base_names {
         let base_class = view.get_engine_class(base_name);
         for method in base_class.methods.iter() {
-            if let Some(tokens) = make_virtual_method(method) {
-                all_tokens.push(tokens);
+            if let Some(method) = make_virtual_method(method) {
+                if method.function_safety.is_trait_unsafe() {
+                    unsafe_trait_methods.push(method)
+                } else {
+                    safe_trait_methods.push(method)
+                }
             }
         }
     }
 
-    all_tokens
+    VirtualMethods {
+        safe_trait_methods,
+        unsafe_trait_methods,
+    }
 }
