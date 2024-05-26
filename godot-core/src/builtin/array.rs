@@ -104,6 +104,25 @@ impl<T: ArrayElement> Array<T> {
         Self::default()
     }
 
+    pub fn coerce_from(variant: &Variant) -> Result<Self, ConvertError> {
+        let array = unsafe { Self::unchecked_from_variant(variant)? };
+
+        Ok(unsafe {
+            Self::new_with_uninit(|self_ptr| {
+                let ctor = sys::builtin_fn!(array_from_base_type_class_name_script);
+                let type_info = TypeInfo::of::<T>();
+                let variant_type = type_info.variant_type.sys() as i64;
+                let args = [
+                    array.sys(),
+                    variant_type.sys(),
+                    type_info.class_name.sys(),
+                    std::ptr::null(),
+                ];
+                ctor(self_ptr, args.as_ptr());
+            })
+        })
+    }
+
     /// ⚠️ Returns the value at the specified index.
     ///
     /// This replaces the `Index` trait, which cannot be implemented for `Array` as references are not guaranteed to remain valid.
@@ -694,6 +713,23 @@ impl<T: ArrayElement> Array<T> {
         }
     }
 
+    unsafe fn unchecked_from_variant(variant: &Variant) -> Result<Self, ConvertError> {
+        if variant.get_type() != Self::variant_type() {
+            return Err(FromVariantError::BadType {
+                expected: Self::variant_type(),
+                actual: variant.get_type(),
+            }
+            .into_error(variant.clone()));
+        }
+
+        Ok(unsafe {
+            sys::new_with_uninit_or_init::<Self>(|self_ptr| {
+                let array_from_variant = sys::builtin_fn!(array_from_variant);
+                array_from_variant(self_ptr, sys::SysPtr::force_mut(variant.var_sys()));
+            })
+        })
+    }
+
     /// Checks that the inner array has the correct type set on it for storing elements of type `T`.
     fn with_checked_type(self) -> Result<Self, ConvertError> {
         let self_ty = self.type_info();
@@ -952,22 +988,7 @@ impl<T: ArrayElement> GodotFfiVariant for Array<T> {
     }
 
     fn ffi_from_variant(variant: &Variant) -> Result<Self, ConvertError> {
-        if variant.get_type() != Self::variant_type() {
-            return Err(FromVariantError::BadType {
-                expected: Self::variant_type(),
-                actual: variant.get_type(),
-            }
-            .into_error(variant.clone()));
-        }
-
-        let array = unsafe {
-            sys::new_with_uninit_or_init::<Self>(|self_ptr| {
-                let array_from_variant = sys::builtin_fn!(array_from_variant);
-                array_from_variant(self_ptr, sys::SysPtr::force_mut(variant.var_sys()));
-            })
-        };
-
-        array.with_checked_type()
+        unsafe { Self::unchecked_from_variant(variant)? }.with_checked_type()
     }
 }
 
