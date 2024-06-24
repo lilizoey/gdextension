@@ -1,0 +1,996 @@
+Initialize godot-rust (API v4.2.stable.official, runtime v4.2.2.stable.official)
+Godot Engine v4.2.2.stable.official.15073afe3 - https://godotengine.org
+ 
+[36;1;1mRun[0m Godot integration tests...
+  Rust: found 530 tests in 49 files.
+  GDScript: found 321 tests in 4 files.
+
+   color_test.rs:
+   -- color_from_rgba8 ... [32mok[0m
+   -- color_from_u32 ... [32mok[0m
+   -- color_from_u64 ... [32mok[0m
+   -- color_from_html ... [32mok[0m
+   -- color_from_string ... [32mok[0m
+   -- color_get_set_u8 ... [32mok[0m
+   -- color_blend ... [32mok[0m
+   -- color_to_u32 ... [32mok[0m
+   -- color_to_u64 ... [32mok[0m
+   -- color_from_color_hsv ... [32mok[0m
+   -- color_hsv_wraps_correctly ... [32mok[0m
+   -- color_hsv_roundtrip ... [32mok[0m
+   -- color_hsv_from_color_roundtrip ... [32mok[0m
+   -- color_hsv_multi_roundtrip ... [32mok[0m
+
+   array_test.rs:
+   -- array_default ... [32mok[0m
+   -- array_new ... [32mok[0m
+   -- array_eq ... [32mok[0m
+   -- typed_array_from_to_variant ... [32mok[0m
+   -- untyped_array_from_to_variant ... [32mok[0m
+   -- array_from_packed_array ... [32mok[0m
+   -- array_from_iterator ... [32mok[0m
+   -- array_from_slice ... [32mok[0m
+   -- array_try_into_vec ... [32mok[0m
+   -- array_iter_shared ... [32mok[0m
+   -- array_hash ... [32mok[0m
+   -- array_share ... [32mok[0m
+   -- array_duplicate_shallow ... [32mok[0m
+   -- array_duplicate_deep ... [32mok[0m
+   -- array_subarray_shallow ... [32mok[0m
+   -- array_subarray_deep ... [32mok[0m
+   -- array_get ... [32mok[0m
+   -- array_try_get ... [32mok[0m
+   -- array_first_last ... [32mok[0m
+   -- array_binary_search ... [32mok[0m
+   -- array_find ... [32mok[0m
+   -- array_rfind ... [32mok[0m
+   -- array_min_max ... [32mok[0m
+   -- array_pick_random ... [32mok[0m
+   -- array_set ... [32mok[0m
+   -- array_push_pop ... [32mok[0m
+   -- array_insert ... [32mok[0m
+   -- array_extend ... [32mok[0m
+   -- array_sort ... [32mok[0m
+   -- array_reverse ... [32mok[0m
+   -- array_shuffle ... [32mok[0m
+   -- array_mixed_values ... [32mok[0m
+   -- untyped_array_pass_to_godot_func ... [32mok[0m
+   -- untyped_array_return_from_godot_func ... [32mok[0m
+   -- typed_array_pass_to_godot_func ... [32mok[0m
+   -- typed_array_return_from_godot_func ... [32mok[0m
+   -- typed_array_try_from_untyped ... [32mok[0m
+   -- untyped_array_try_from_typed ... [32mok[0m
+   -- array_should_format_with_display ... [32mok[0m
+   -- array_sort_custom ... [32mok[0m
+   -- array_binary_search_custom ... [32mok[0m
+   -- array_shrink ... [32mok[0m
+   -- array_resize ... [32mok[0m
+
+   callable_test.rs:
+   -- callable_validity ... [32mok[0m
+   -- callable_hash ... [32mok[0m
+   -- callable_object_method ... [32mok[0m
+   -- callable_call ... [32mok[0m
+   -- callable_call_return ... [32mok[0m
+   -- callable_call_engine ... [32mok[0m
+   -- callable_bindv ... [32mok[0m
+   -- callable_from_fn ... [32mok[0m
+   -- callable_from_fn_eq ... [32mok[0m
+   -- callable_custom_invoke ... [32mok[0m
+   -- callable_custom_to_string ... [32mok[0m
+   -- callable_custom_eq ... [32mok[0m
+   -- callable_custom_eq_hash ... [32mok[0m
+
+   dictionary_test.rs:
+   -- dictionary_default ... [32mok[0m
+   -- dictionary_new ... [32mok[0m
+   -- dictionary_from_iterator ... [32mok[0m
+   -- dictionary_from ... [32mok[0m
+   -- dictionary_macro ... [32mok[0m
+   -- dictionary_clone ... [32mok[0m
+   -- dictionary_hash ... [32mok[0m
+   -- dictionary_duplicate_deep ... [32mok[0m
+   -- dictionary_duplicate_shallow ... [32mok[0m
+   -- dictionary_get ... [32mok[0m
+   -- dictionary_at ... [32mok[0m
+   -- dictionary_insert ... [32mok[0m
+   -- dictionary_insert_multiple ... [32mok[0m
+   -- dictionary_insert_long ... [32mok[0m
+   -- dictionary_extend ... [32mok[0m
+   -- dictionary_remove ... [32mok[0m
+   -- dictionary_clear ... [32mok[0m
+   -- dictionary_find_key ... [32mok[0m
+   -- dictionary_contains_keys ... [32mok[0m
+   -- dictionary_keys_values ... [32mok[0m
+   -- dictionary_equal ... [32mok[0m
+   -- dictionary_iter ... [32mok[0m
+   -- dictionary_iter_size_hint ... [32mok[0m
+   -- dictionary_iter_equals_big ... [32mok[0m
+   -- dictionary_iter_insert ... [32mok[0m
+   -- dictionary_iter_insert_after_completion ... [32mok[0m
+   -- dictionary_iter_big ... [32mok[0m
+   -- dictionary_iter_simultaneous ... [32mok[0m
+   -- dictionary_iter_panics ... [32mok[0m
+   -- dictionary_iter_clear ... [32mok[0m
+   -- dictionary_iter_erase ... [32mok[0m
+   -- dictionary_should_format_with_display ... [32mok[0m
+
+   packed_array_test.rs:
+   -- packed_array_default ... [32mok[0m
+   -- packed_array_new ... [32mok[0m
+   -- packed_array_from_iterator ... [32mok[0m
+   -- packed_array_to_vec ... [32mok[0m
+   -- packed_array_eq ... [32mok[0m
+   -- packed_array_clone ... [32mok[0m
+   -- packed_array_subarray ... [32mok[0m
+   -- packed_array_as_slice ... [32mok[0m
+   -- packed_array_as_mut_slice ... [32mok[0m
+   -- packed_array_index ... [32mok[0m
+   -- packed_array_get ... [32mok[0m
+   -- packed_array_binary_search ... [32mok[0m
+   -- packed_array_find ... [32mok[0m
+   -- packed_array_rfind ... [32mok[0m
+   -- packed_array_push ... [32mok[0m
+   -- packed_array_insert ... [32mok[0m
+   -- packed_array_extend ... [32mok[0m
+   -- packed_array_sort ... [32mok[0m
+   -- packed_array_reverse ... [32mok[0m
+   -- packed_array_format ... [32mok[0m
+
+   rid_test.rs:
+   -- rid_equiv ... [32mok[0m
+   -- canvas_set_parent ... [32mok[0m
+   -- strange_rids ... [32mok[0m
+
+   signal_test.rs:
+   -- signals ... [32mok[0m
+   -- instantiate_signal ... [32mok[0m
+   -- emit_signal ... [32mok[0m
+   -- connect_signal ... [32mok[0m
+
+   variant_test.rs:
+   -- variant_nil ... [32mok[0m
+   -- variant_conversions ... [32mok[0m
+   -- variant_bad_integer_conversions ... [32mok[0m
+   -- variant_bad_conversions ... [32mok[0m
+   -- variant_special_conversions ... [32mok[0m
+   -- variant_get_type ... [32mok[0m
+   -- variant_equal ... [32mok[0m
+   -- variant_call ... [32mok[0m
+   -- variant_evaluate ... [32mok[0m
+   -- variant_evaluate_total_order ... [32mok[0m
+   -- variant_display ... [32mok[0m
+   -- variant_sys_conversion ... [32mok[0m
+   -- variant_sys_conversion2 ... [33mskipped[0m
+   -- variant_null_object_is_nil ... [32mok[0m
+   -- variant_type_correct ... [32mok[0m
+   -- variant_stringify_correct ... [32mok[0m
+   -- variant_booleanize_correct ... [32mok[0m
+   -- variant_hash_correct ... [32mok[0m
+
+   convert_test.rs:
+   -- error_has_value_and_no_cause ... [32mok[0m
+   -- error_maintains_value ... [32mok[0m
+   -- custom_convert_roundtrip ... [32mok[0m
+   -- custom_convert_error_from_variant ... [32mok[0m
+
+   basis_test.rs:
+   -- basis_multiply_same ... [32mok[0m
+   -- basis_euler_angles_same ... [32mok[0m
+   -- basis_equiv ... [32mok[0m
+
+   plane_test.rs:
+   -- plane_normalized ... [32mok[0m
+   -- plane_center ... [32mok[0m
+   -- plane_is_finite ... [32mok[0m
+   -- plane_distance_to ... [32mok[0m
+   -- plane_is_point_over ... [32mok[0m
+   -- plane_project ... [32mok[0m
+   -- plane_intersect_segment ... [32mok[0m
+   -- plane_intersect_ray ... [32mok[0m
+   -- plane_contains_point ... [32mok[0m
+   -- plane_is_equal_approx ... [32mok[0m
+   -- plane_intersect_3 ... [32mok[0m
+
+   projection_test.rs:
+   -- test_create_orthogonal ... [32mok[0m
+   -- test_create_fit_aabb ... [32mok[0m
+   -- test_fovy ... [32mok[0m
+   -- test_create_light_atlas_rect ... [32mok[0m
+   -- test_create_orthogonal_aspect ... [32mok[0m
+   -- test_create_perspective ... [32mok[0m
+   -- test_create_frustum ... [32mok[0m
+   -- test_create_frustum_aspect ... [32mok[0m
+   -- test_projection_combined ... [32mok[0m
+
+   quaternion_test.rs:
+   -- quaternion_default ... [32mok[0m
+   -- quaternion_from_xyzw ... [32mok[0m
+   -- quaternion_from_axis_angle ... [32mok[0m
+   -- quaternion_normalization ... [32mok[0m
+   -- quaternion_slerp ... [32mok[0m
+   -- quaternion_slerpni ... [32mok[0m
+   -- quaternion_spherical_cubic_interpolate ... [32mok[0m
+   -- quaternion_spherical_cubic_interpolate_in_time ... [32mok[0m
+
+   rect2_test.rs:
+   -- rect2_inner_equivalence ... [32mok[0m
+
+   rect2i_test.rs:
+   -- rect2i_equiv_unary ... [32mok[0m
+
+   transform2d_test.rs:
+   -- transform2d_equiv ... [32mok[0m
+   -- transform2d_xform_equiv ... [32mok[0m
+
+   transform3d_test.rs:
+   -- transform3d_equiv ... [32mok[0m
+   -- transform3d_xform_equiv ... [32mok[0m
+
+   vector2_test.rs:
+   -- abs ... [32mok[0m
+   -- angle ... [32mok[0m
+   -- angle_to ... [32mok[0m
+   -- angle_to_point ... [32mok[0m
+   -- aspect ... [32mok[0m
+   -- bezier_derivative ... [32mok[0m
+   -- bezier_interpolate ... [32mok[0m
+   -- bounce ... [32mok[0m
+   -- ceil ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- cross ... [32mok[0m
+   -- cubic_interpolate ... [32mok[0m
+   -- cubic_interpolate_in_time ... [32mok[0m
+   -- direction_to ... [32mok[0m
+   -- distance_squared_to ... [32mok[0m
+   -- distance_to ... [32mok[0m
+   -- dot ... [32mok[0m
+   -- floor ... [32mok[0m
+   -- from_angle ... [32mok[0m
+   -- is_equal_approx ... [32mok[0m
+   -- is_finite ... [32mok[0m
+   -- is_normalized ... [32mok[0m
+   -- is_zero_approx ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- lerp ... [32mok[0m
+   -- limit_length ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- move_toward ... [32mok[0m
+   -- normalized ... [32mok[0m
+   -- orthogonal ... [32mok[0m
+   -- posmod ... [32mok[0m
+   -- posmodv ... [32mok[0m
+   -- project ... [32mok[0m
+   -- reflect ... [32mok[0m
+   -- rotated ... [32mok[0m
+   -- round ... [32mok[0m
+   -- sign ... [32mok[0m
+   -- slerp ... [32mok[0m
+   -- slide ... [32mok[0m
+   -- snapped ... [32mok[0m
+   -- equiv ... [32mok[0m
+
+   vector2i_test.rs:
+   -- abs ... [32mok[0m
+   -- aspect ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- sign ... [32mok[0m
+
+   vector3_test.rs:
+   -- abs ... [32mok[0m
+   -- angle_to ... [32mok[0m
+   -- bezier_derivative ... [32mok[0m
+   -- bezier_interpolate ... [32mok[0m
+   -- bounce ... [32mok[0m
+   -- ceil ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- cross ... [32mok[0m
+   -- cubic_interpolate ... [32mok[0m
+   -- cubic_interpolate_in_time ... [32mok[0m
+   -- direction_to ... [32mok[0m
+   -- distance_squared_to ... [32mok[0m
+   -- distance_to ... [32mok[0m
+   -- dot ... [32mok[0m
+   -- floor ... [32mok[0m
+   -- inverse ... [32mok[0m
+   -- is_equal_approx ... [32mok[0m
+   -- is_finite ... [32mok[0m
+   -- is_normalized ... [32mok[0m
+   -- is_zero_approx ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- lerp ... [32mok[0m
+   -- limit_length ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- move_toward ... [32mok[0m
+   -- normalized ... [32mok[0m
+   -- octahedron_encode ... [32mok[0m
+   -- orthogonal_decode ... [32mok[0m
+   -- outer ... [32mok[0m
+   -- posmod ... [32mok[0m
+   -- posmodv ... [32mok[0m
+   -- project ... [32mok[0m
+   -- reflect ... [32mok[0m
+   -- rotated ... [32mok[0m
+   -- round ... [32mok[0m
+   -- sign ... [32mok[0m
+   -- signed_angle_to ... [32mok[0m
+   -- slerp ... [32mok[0m
+   -- slide ... [32mok[0m
+   -- snapped ... [32mok[0m
+   -- equiv ... [32mok[0m
+
+   vector3i_test.rs:
+   -- abs ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- sign ... [32mok[0m
+
+   vector4_test.rs:
+   -- abs ... [32mok[0m
+   -- ceil ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- cubic_interpolate ... [32mok[0m
+   -- cubic_interpolate_in_time ... [32mok[0m
+   -- direction_to ... [32mok[0m
+   -- distance_squared_to ... [32mok[0m
+   -- distance_to ... [32mok[0m
+   -- dot ... [32mok[0m
+   -- floor ... [32mok[0m
+   -- inverse ... [32mok[0m
+   -- is_equal_approx ... [32mok[0m
+   -- is_finite ... [32mok[0m
+   -- is_normalized ... [32mok[0m
+   -- is_zero_approx ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- lerp ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- normalized ... [32mok[0m
+   -- posmod ... [32mok[0m
+   -- posmodv ... [32mok[0m
+   -- round ... [32mok[0m
+   -- sign ... [32mok[0m
+   -- snapped ... [32mok[0m
+
+   vector4i_test.rs:
+   -- abs ... [32mok[0m
+   -- clamp ... [32mok[0m
+   -- length ... [32mok[0m
+   -- length_squared ... [32mok[0m
+   -- max_axis ... [32mok[0m
+   -- min_axis ... [32mok[0m
+   -- sign ... [32mok[0m
+
+   gstring_test.rs:
+   -- string_default ... [32mok[0m
+   -- string_conversion ... [32mok[0m
+   -- string_equality ... [32mok[0m
+   -- string_ordering ... [32mok[0m
+   -- string_clone ... [32mok[0m
+   -- empty_string_chars ... [32mok[0m
+   -- string_chars ... [32mok[0m
+   -- string_hash ... [32mok[0m
+   -- string_with_null ... [32mok[0m
+
+   node_path_test.rs:
+   -- node_path_default ... [32mok[0m
+   -- node_path_conversion ... [32mok[0m
+   -- node_path_equality ... [32mok[0m
+   -- node_path_clone ... [32mok[0m
+   -- node_path_hash ... [32mok[0m
+   -- node_path_with_null ... [32mok[0m
+
+   string_name_test.rs:
+   -- string_name_default ... [32mok[0m
+   -- string_name_conversion ... [32mok[0m
+   -- string_name_node_path_conversion ... [32mok[0m
+   -- string_name_equality ... [32mok[0m
+   -- string_name_transient_ord ... [32mok[0m
+   -- string_name_clone ... [32mok[0m
+   -- string_name_hash ... [32mok[0m
+   -- string_name_length ... [32mok[0m
+   -- string_name_is_empty ... [32mok[0m
+   -- string_name_from_cstr ... [32mok[0m
+   -- string_name_with_null ... [32mok[0m
+
+   codegen_test.rs:
+   -- codegen_class_renamed ... [32mok[0m
+   -- codegen_base_renamed ... [32mok[0m
+   -- codegen_static_builtin_method ... [32mok[0m
+   -- codegen_static_class_method ... [32mok[0m
+   -- codegen_constants ... [32mok[0m
+   -- cfg_test ... [32mok[0m
+
+   gfile_test.rs:
+   -- basic_read_write_works ... [32mok[0m
+   -- write_trait_works ... [32mok[0m
+   -- read_trait_works ... [32mok[0m
+   -- bufwriter_works ... [32mok[0m
+   -- bufreader_works ... [32mok[0m
+   -- seek_trait_works ... [32mok[0m
+   -- bufread_trait_works ... [32mok[0m
+
+   native_structures_test.rs:
+   -- native_structure_codegen ... [32mok[0m
+   -- native_structure_out_parameter ... [32mok[0m
+   -- native_structure_pointer_to_array_parameter ... [32mok[0m
+   -- native_structure_clone ... [32mok[0m
+   -- native_structure_partialeq ... [32mok[0m
+   -- native_structure_debug ... [32mok[0m
+   -- native_structure_object_pointers ... [32mok[0m
+   -- native_structure_refcounted_pointers ... [33mskipped[0m
+
+   node_test.rs:
+   -- node_get_node ... [32mok[0m
+   -- node_get_node_fail ... [32mok[0m
+   -- node_path_from_str ... [32mok[0m
+   -- node_scene_tree ... [33mskipped[0m
+   -- node_call_group ... [32mok[0m
+
+   save_load_test.rs:
+   -- save_test ... [32mok[0m
+   -- load_test ... [32mok[0m
+
+   translate_test.rs:
+   -- tr_macro_format ... [32mok[0m
+   -- tr_n_macro_format_plural ... [32mok[0m
+
+   utilities_test.rs:
+   -- utilities_abs ... [32mok[0m
+   -- utilities_sign ... [32mok[0m
+   -- utilities_str ... [32mok[0m
+   -- utilities_wrap ... [32mok[0m
+   -- utilities_max ... [32mok[0m
+
+   base_test.rs:
+   -- base_test_is_weak ... [33mskipped[0m
+   -- base_instance_id ... [32mok[0m
+   -- base_access_unbound ... [32mok[0m
+   -- base_access_unbound_no_field ... [32mok[0m
+   -- base_display ... [32mok[0m
+   -- base_debug ... [32mok[0m
+   -- base_with_init ... [32mok[0m
+   -- base_gd_self ... [32mok[0m
+   -- base_smuggling ... [32mok[0m
+   -- base_swapping ... [32mok[0m
+
+   class_rename_test.rs:
+   -- renaming_changes_the_name ... [32mok[0m
+
+   dynamic_call_test.rs:
+   -- dynamic_call_no_args ... [32mok[0m
+   -- dynamic_call_with_args ... [32mok[0m
+   -- dynamic_call_with_too_few_args ... [32mok[0m
+   -- dynamic_call_with_too_many_args ... [32mok[0m
+   -- dynamic_call_parameter_mismatch ... [32mok[0m
+   -- dynamic_call_with_panic ... [32mok[0m
+   -- dynamic_call_with_too_few_args_engine ... [32mok[0m
+   -- dynamic_call_with_too_many_args_engine ... [32mok[0m
+   -- dynamic_call_parameter_mismatch_engine ... [32mok[0m
+   -- dynamic_call_return_mismatch ... [33mskipped[0m
+
+   init_level_test.rs:
+   -- class_run_during_servers_init ... [32mok[0m
+
+   object_swap_test.rs:
+   -- object_subtype_swap_method ... [32mok[0m
+   -- object_subtype_swap_clone ... [32mok[0m
+   -- object_subtype_swap_free ... [32mok[0m
+   -- object_subtype_swap_argument_passing ... [32mok[0m
+   -- object_subtype_swap_bind ... [32mok[0m
+   -- object_subtype_swap_casts ... [32mok[0m
+   -- object_subtype_swap_func_return ... [32mok[0m
+   -- object_freed_func_return ... [32mok[0m
+   -- object_freed_panic_during_unwind ... [32mok[0m
+
+   object_test.rs:
+   -- object_construct_default ... [32mok[0m
+   -- object_construct_new_gd ... [32mok[0m
+   -- object_construct_value ... [32mok[0m
+   -- object_user_roundtrip_return ... [32mok[0m
+   -- object_user_roundtrip_write ... [32mok[0m
+   -- object_engine_roundtrip ... [32mok[0m
+   -- object_user_display ... [32mok[0m
+   -- object_engine_display ... [32mok[0m
+   -- object_debug ... [32mok[0m
+   -- object_instance_id ... [32mok[0m
+   -- object_instance_id_when_freed ... [32mok[0m
+   -- object_from_invalid_instance_id ... [32mok[0m
+   -- object_instance_from_id ... [32mok[0m
+   -- object_instance_from_invalid_id ... [32mok[0m
+   -- object_from_instance_id_inherits_type ... [32mok[0m
+   -- object_from_instance_id_unrelated_type ... [32mok[0m
+   -- object_new_has_instance_id ... [32mok[0m
+   -- object_dynamic_free ... [32mok[0m
+   -- object_user_bind_after_free ... [32mok[0m
+   -- object_user_free_during_bind ... [32mok[0m
+   -- object_engine_freed_argument_passing ... [32mok[0m
+   -- object_user_freed_casts ... [32mok[0m
+   -- object_user_freed_argument_passing ... [32mok[0m
+   -- object_user_dynamic_free_during_bind ... [33mskipped[0m
+   -- object_user_call_after_free ... [32mok[0m
+   -- object_engine_use_after_free ... [32mok[0m
+   -- object_engine_use_after_free_varcall ... [32mok[0m
+   -- object_user_eq ... [32mok[0m
+   -- object_engine_eq ... [32mok[0m
+   -- object_dead_eq ... [32mok[0m
+   -- object_user_convert_variant ... [32mok[0m
+   -- object_engine_convert_variant ... [32mok[0m
+   -- object_user_convert_variant_refcount ... [32mok[0m
+   -- object_engine_convert_variant_refcount ... [32mok[0m
+   -- object_engine_convert_variant_nil ... [32mok[0m
+   -- object_engine_returned_refcount ... [32mok[0m
+   -- object_engine_up_deref ... [32mok[0m
+   -- object_engine_up_deref_mut ... [32mok[0m
+   -- object_engine_upcast ... [32mok[0m
+   -- object_engine_upcast_ref ... [32mok[0m
+   -- object_engine_upcast_reflexive ... [32mok[0m
+   -- object_engine_downcast ... [32mok[0m
+   -- object_reject_invalid_downcast ... [32mok[0m
+   -- variant_reject_invalid_downcast ... [32mok[0m
+   -- object_engine_downcast_reflexive ... [32mok[0m
+   -- object_engine_bad_downcast ... [32mok[0m
+   -- object_engine_accept_polymorphic ... [32mok[0m
+   -- object_user_accept_polymorphic ... [32mok[0m
+   -- object_user_upcast ... [32mok[0m
+   -- object_user_upcast_ref ... [32mok[0m
+   -- object_user_upcast_mut ... [32mok[0m
+   -- object_user_downcast ... [32mok[0m
+   -- object_user_bad_downcast ... [32mok[0m
+   -- object_engine_manual_free ... [32mok[0m
+   -- object_engine_shared_free ... [32mok[0m
+   -- object_engine_manual_double_free ... [32mok[0m
+   -- object_engine_refcounted_free ... [32mok[0m
+   -- object_user_double_free ... [32mok[0m
+   -- object_user_share_drop ... [32mok[0m
+   -- object_get_scene_tree ... [32mok[0m
+   -- object_try_to_unique ... [32mok[0m
+   -- custom_constructor_works ... [32mok[0m
+   -- double_use_reference ... [32mok[0m
+
+   onready_test.rs:
+   -- onready_deref ... [32mok[0m
+   -- onready_deref_on_uninit ... [32mok[0m
+   -- onready_multi_init ... [32mok[0m
+   -- onready_lifecycle_forget ... [33mskipped[0m
+   -- onready_lifecycle ... [32mok[0m
+   -- onready_lifecycle_without_impl ... [32mok[0m
+   -- onready_lifecycle_with_impl_without_ready ... [32mok[0m
+   -- onready_property_access ... [32mok[0m
+
+   property_template_test.rs:
+   -- property_template_test ... [32mok[0m
+
+   property_test.rs:
+   -- derive_property ... [32mok[0m
+   -- derive_export ... [32mok[0m
+   -- export_resource ... [32mok[0m
+   -- override_export ... [32mok[0m
+
+   reentrant_test.rs:
+   -- reentrant_call_succeeds ... [32mok[0m
+   -- reentrant_emit_succeeds ... [32mok[0m
+
+   singleton_test.rs:
+   -- singleton_is_unique ... [32mok[0m
+   -- singleton_from_instance_id ... [32mok[0m
+   -- singleton_is_operational ... [32mok[0m
+
+   virtual_methods_test.rs:
+   -- test_to_string ... [32mok[0m
+   -- test_ready ... [32mok[0m
+   -- test_ready_multiple_fires ... [32mok[0m
+   -- test_ready_request_ready ... [32mok[0m
+   -- test_tree_enters_exits ... [32mok[0m
+   -- test_virtual_method_with_return ... [32mok[0m
+   -- test_format_loader ... [32mok[0m
+   -- test_input_event ... [32mok[0m
+   -- test_input_event_multiple ... [32mok[0m
+   -- test_notifications ... [32mok[0m
+   -- test_get_called ... [32mok[0m
+   -- test_get_returns_correct ... [32mok[0m
+   -- test_set_called ... [32mok[0m
+   -- test_set_sets_correct ... [32mok[0m
+   -- test_revert ... [32mok[0m
+
+   constant_test.rs:
+   -- constants_correct_value ... [32mok[0m
+   -- cfg_removes_or_keeps_constants ... [32mok[0m
+   -- enum_export_correct_values ... [32mok[0m
+   -- bitfield_export_correct_values ... [32mok[0m
+
+   derive_variant_test.rs:
+   -- newtype_tuple_struct ... [32mok[0m
+   -- newtype_named_struct ... [32mok[0m
+   -- enum_stringy ... [32mok[0m
+   -- enum_inty ... [32mok[0m
+   -- test_enum_i8 ... [32mok[0m
+   -- test_enum_16 ... [32mok[0m
+   -- test_enum_i32 ... [32mok[0m
+   -- test_enum_i64 ... [32mok[0m
+   -- test_enum_u8 ... [32mok[0m
+   -- test_enum_u16 ... [32mok[0m
+   -- test_enum_u32 ... [32mok[0m
+
+   func_test.rs:
+   -- cfg_doesnt_interfere_with_valid_method_impls ... [32mok[0m
+   -- cfg_removes_or_keeps_methods ... [32mok[0m
+   -- cfg_removes_or_keeps_signals ... [32mok[0m
+
+   option_ffi_test.rs:
+   -- option_some_sys_conversion ... [32mok[0m
+   -- option_none_sys_conversion ... [32mok[0m
+
+   ManualFfiTests.gd:
+   -- test_missing_init ... [32mok[0m
+   -- test_init_defaults ... [32mok[0m
+   -- test_to_string ... [32mok[0m
+   -- test_export ... [32mok[0m
+   -- test_object_pass_to_user_func_varcall ... [32mok[0m
+   -- test_object_pass_to_user_func_ptrcall ... [32mok[0m
+   -- test_object_return_from_user_func_varcall ... [32mok[0m
+   -- test_object_return_from_user_func_ptrcall ... [32mok[0m
+   -- test_refcounted_pass_to_user_func_varcall ... [32mok[0m
+   -- test_refcounted_pass_to_user_func_ptrcall ... [32mok[0m
+   -- test_refcounted_as_object_pass_to_user_func_varcall ... [32mok[0m
+   -- test_refcounted_as_object_pass_to_user_func_ptrcall ... [32mok[0m
+   -- test_refcounted_return_from_user_func_varcall ... [32mok[0m
+   -- test_refcounted_return_from_user_func_ptrcall ... [32mok[0m
+   -- test_refcounted_as_object_return_from_user_func_varcall ... [32mok[0m
+   -- test_refcounted_as_object_return_from_user_func_ptrcall ... [32mok[0m
+   -- test_custom_constructor ... [32mok[0m
+   -- test_option_refcounted_none_varcall ... [32mok[0m
+   -- test_option_refcounted_none_ptrcall ... [32mok[0m
+   -- test_option_refcounted_some_varcall ... [32mok[0m
+   -- test_option_refcounted_some_ptrcall ... [32mok[0m
+   -- test_option_node_none_varcall ... [32mok[0m
+   -- test_option_node_none_ptrcall ... [32mok[0m
+   -- test_option_node_some_varcall ... [32mok[0m
+   -- test_option_node_some_ptrcall ... [32mok[0m
+   -- test_custom_property ... [32mok[0m
+   -- test_custom_property_wrong_values_1 ... [32mok[0m
+   -- test_custom_property_wrong_values_2 ... [32mok[0m
+   -- test_option_export ... [32mok[0m
+   -- test_func_rename ... [32mok[0m
+   -- test_gd_self_obj_succeeds ... [32mok[0m
+   -- test_callable_refcount ... [32mok[0m
+   -- test_get_set ... [32mok[0m
+
+   GenFfiTests.gd:
+   -- test_varcall_i64 ... [32mok[0m
+   -- test_varcall_i32 ... [32mok[0m
+   -- test_varcall_u32 ... [32mok[0m
+   -- test_varcall_i16 ... [32mok[0m
+   -- test_varcall_u16 ... [32mok[0m
+   -- test_varcall_i8 ... [32mok[0m
+   -- test_varcall_u8 ... [32mok[0m
+   -- test_varcall_f32 ... [32mok[0m
+   -- test_varcall_f64 ... [32mok[0m
+   -- test_varcall_bool ... [32mok[0m
+   -- test_varcall_color ... [32mok[0m
+   -- test_varcall_gstring ... [32mok[0m
+   -- test_varcall_stringname ... [32mok[0m
+   -- test_varcall_nodepath ... [32mok[0m
+   -- test_varcall_vector2 ... [32mok[0m
+   -- test_varcall_vector3 ... [32mok[0m
+   -- test_varcall_vector4 ... [32mok[0m
+   -- test_varcall_vector2i ... [32mok[0m
+   -- test_varcall_vector3i ... [32mok[0m
+   -- test_varcall_vector4i ... [32mok[0m
+   -- test_varcall_callable ... [32mok[0m
+   -- test_varcall_signal ... [32mok[0m
+   -- test_varcall_rect2 ... [32mok[0m
+   -- test_varcall_rect2i ... [32mok[0m
+   -- test_varcall_transform2d ... [32mok[0m
+   -- test_varcall_plane ... [32mok[0m
+   -- test_varcall_quaternion ... [32mok[0m
+   -- test_varcall_aabb ... [32mok[0m
+   -- test_varcall_basis ... [32mok[0m
+   -- test_varcall_transform3d ... [32mok[0m
+   -- test_varcall_projection ... [32mok[0m
+   -- test_varcall_rid ... [32mok[0m
+   -- test_varcall_option_gd_node ... [32mok[0m
+   -- test_varcall_option_gd_resource ... [32mok[0m
+   -- test_varcall_packedbytearray ... [32mok[0m
+   -- test_varcall_packedint32array ... [32mok[0m
+   -- test_varcall_packedint64array ... [32mok[0m
+   -- test_varcall_packedfloat32array ... [32mok[0m
+   -- test_varcall_packedfloat64array ... [32mok[0m
+   -- test_varcall_packedstringarray ... [32mok[0m
+   -- test_varcall_packedvector2array ... [32mok[0m
+   -- test_varcall_packedvector3array ... [32mok[0m
+   -- test_varcall_packedcolorarray ... [32mok[0m
+   -- test_varcall_newi64 ... [32mok[0m
+   -- test_varcall_newi32 ... [32mok[0m
+   -- test_varcall_newu32 ... [32mok[0m
+   -- test_varcall_newi16 ... [32mok[0m
+   -- test_varcall_newu16 ... [32mok[0m
+   -- test_varcall_newi8 ... [32mok[0m
+   -- test_varcall_newu8 ... [32mok[0m
+   -- test_varcall_newf32 ... [32mok[0m
+   -- test_varcall_newf64 ... [32mok[0m
+   -- test_varcall_newbool ... [32mok[0m
+   -- test_varcall_newcolor ... [32mok[0m
+   -- test_varcall_newstring ... [32mok[0m
+   -- test_varcall_newstringname ... [32mok[0m
+   -- test_varcall_newnodepath ... [32mok[0m
+   -- test_varcall_newvector2 ... [32mok[0m
+   -- test_varcall_newvector3 ... [32mok[0m
+   -- test_varcall_newvector4 ... [32mok[0m
+   -- test_varcall_newvector2i ... [32mok[0m
+   -- test_varcall_newvector3i ... [32mok[0m
+   -- test_varcall_newvector4i ... [32mok[0m
+   -- test_varcall_newcallable ... [32mok[0m
+   -- test_varcall_variantarray ... [32mok[0m
+   -- test_varcall_dictionary ... [32mok[0m
+   -- test_varcall_instanceid ... [32mok[0m
+   -- test_varcall_variant ... [32mok[0m
+   -- test_varcall_error ... [32mok[0m
+   -- test_varcall_static_i64 ... [32mok[0m
+   -- test_varcall_static_i32 ... [32mok[0m
+   -- test_varcall_static_u32 ... [32mok[0m
+   -- test_varcall_static_i16 ... [32mok[0m
+   -- test_varcall_static_u16 ... [32mok[0m
+   -- test_varcall_static_i8 ... [32mok[0m
+   -- test_varcall_static_u8 ... [32mok[0m
+   -- test_varcall_static_f32 ... [32mok[0m
+   -- test_varcall_static_f64 ... [32mok[0m
+   -- test_varcall_static_bool ... [32mok[0m
+   -- test_varcall_static_color ... [32mok[0m
+   -- test_varcall_static_gstring ... [32mok[0m
+   -- test_varcall_static_stringname ... [32mok[0m
+   -- test_varcall_static_nodepath ... [32mok[0m
+   -- test_varcall_static_vector2 ... [32mok[0m
+   -- test_varcall_static_vector3 ... [32mok[0m
+   -- test_varcall_static_vector4 ... [32mok[0m
+   -- test_varcall_static_vector2i ... [32mok[0m
+   -- test_varcall_static_vector3i ... [32mok[0m
+   -- test_varcall_static_vector4i ... [32mok[0m
+   -- test_varcall_static_callable ... [32mok[0m
+   -- test_varcall_static_signal ... [32mok[0m
+   -- test_varcall_static_rect2 ... [32mok[0m
+   -- test_varcall_static_rect2i ... [32mok[0m
+   -- test_varcall_static_transform2d ... [32mok[0m
+   -- test_varcall_static_plane ... [32mok[0m
+   -- test_varcall_static_quaternion ... [32mok[0m
+   -- test_varcall_static_aabb ... [32mok[0m
+   -- test_varcall_static_basis ... [32mok[0m
+   -- test_varcall_static_transform3d ... [32mok[0m
+   -- test_varcall_static_projection ... [32mok[0m
+   -- test_varcall_static_rid ... [32mok[0m
+   -- test_varcall_static_option_gd_node ... [32mok[0m
+   -- test_varcall_static_option_gd_resource ... [32mok[0m
+   -- test_varcall_static_packedbytearray ... [32mok[0m
+   -- test_varcall_static_packedint32array ... [32mok[0m
+   -- test_varcall_static_packedint64array ... [32mok[0m
+   -- test_varcall_static_packedfloat32array ... [32mok[0m
+   -- test_varcall_static_packedfloat64array ... [32mok[0m
+   -- test_varcall_static_packedstringarray ... [32mok[0m
+   -- test_varcall_static_packedvector2array ... [32mok[0m
+   -- test_varcall_static_packedvector3array ... [32mok[0m
+   -- test_varcall_static_packedcolorarray ... [32mok[0m
+   -- test_varcall_static_newi64 ... [32mok[0m
+   -- test_varcall_static_newi32 ... [32mok[0m
+   -- test_varcall_static_newu32 ... [32mok[0m
+   -- test_varcall_static_newi16 ... [32mok[0m
+   -- test_varcall_static_newu16 ... [32mok[0m
+   -- test_varcall_static_newi8 ... [32mok[0m
+   -- test_varcall_static_newu8 ... [32mok[0m
+   -- test_varcall_static_newf32 ... [32mok[0m
+   -- test_varcall_static_newf64 ... [32mok[0m
+   -- test_varcall_static_newbool ... [32mok[0m
+   -- test_varcall_static_newcolor ... [32mok[0m
+   -- test_varcall_static_newstring ... [32mok[0m
+   -- test_varcall_static_newstringname ... [32mok[0m
+   -- test_varcall_static_newnodepath ... [32mok[0m
+   -- test_varcall_static_newvector2 ... [32mok[0m
+   -- test_varcall_static_newvector3 ... [32mok[0m
+   -- test_varcall_static_newvector4 ... [32mok[0m
+   -- test_varcall_static_newvector2i ... [32mok[0m
+   -- test_varcall_static_newvector3i ... [32mok[0m
+   -- test_varcall_static_newvector4i ... [32mok[0m
+   -- test_varcall_static_newcallable ... [32mok[0m
+   -- test_varcall_static_variantarray ... [32mok[0m
+   -- test_varcall_static_dictionary ... [32mok[0m
+   -- test_varcall_static_instanceid ... [32mok[0m
+   -- test_varcall_static_variant ... [32mok[0m
+   -- test_varcall_static_error ... [32mok[0m
+   -- test_ptrcall_i64 ... [32mok[0m
+   -- test_ptrcall_i32 ... [32mok[0m
+   -- test_ptrcall_u32 ... [32mok[0m
+   -- test_ptrcall_i16 ... [32mok[0m
+   -- test_ptrcall_u16 ... [32mok[0m
+   -- test_ptrcall_i8 ... [32mok[0m
+   -- test_ptrcall_u8 ... [32mok[0m
+   -- test_ptrcall_f32 ... [32mok[0m
+   -- test_ptrcall_f64 ... [32mok[0m
+   -- test_ptrcall_bool ... [32mok[0m
+   -- test_ptrcall_color ... [32mok[0m
+   -- test_ptrcall_gstring ... [32mok[0m
+   -- test_ptrcall_stringname ... [32mok[0m
+   -- test_ptrcall_nodepath ... [32mok[0m
+   -- test_ptrcall_vector2 ... [32mok[0m
+   -- test_ptrcall_vector3 ... [32mok[0m
+   -- test_ptrcall_vector4 ... [32mok[0m
+   -- test_ptrcall_vector2i ... [32mok[0m
+   -- test_ptrcall_vector3i ... [32mok[0m
+   -- test_ptrcall_vector4i ... [32mok[0m
+   -- test_ptrcall_callable ... [32mok[0m
+   -- test_ptrcall_signal ... [32mok[0m
+   -- test_ptrcall_rect2 ... [32mok[0m
+   -- test_ptrcall_rect2i ... [32mok[0m
+   -- test_ptrcall_transform2d ... [32mok[0m
+   -- test_ptrcall_plane ... [32mok[0m
+   -- test_ptrcall_quaternion ... [32mok[0m
+   -- test_ptrcall_aabb ... [32mok[0m
+   -- test_ptrcall_basis ... [32mok[0m
+   -- test_ptrcall_transform3d ... [32mok[0m
+   -- test_ptrcall_projection ... [32mok[0m
+   -- test_ptrcall_rid ... [32mok[0m
+   -- test_ptrcall_option_gd_node ... [32mok[0m
+   -- test_ptrcall_option_gd_resource ... [32mok[0m
+   -- test_ptrcall_packedbytearray ... [32mok[0m
+   -- test_ptrcall_packedint32array ... [32mok[0m
+   -- test_ptrcall_packedint64array ... [32mok[0m
+   -- test_ptrcall_packedfloat32array ... [32mok[0m
+   -- test_ptrcall_packedfloat64array ... [32mok[0m
+   -- test_ptrcall_packedstringarray ... [32mok[0m
+   -- test_ptrcall_packedvector2array ... [32mok[0m
+   -- test_ptrcall_packedvector3array ... [32mok[0m
+   -- test_ptrcall_packedcolorarray ... [32mok[0m
+   -- test_ptrcall_newi64 ... [32mok[0m
+   -- test_ptrcall_newi32 ... [32mok[0m
+   -- test_ptrcall_newu32 ... [32mok[0m
+   -- test_ptrcall_newi16 ... [32mok[0m
+   -- test_ptrcall_newu16 ... [32mok[0m
+   -- test_ptrcall_newi8 ... [32mok[0m
+   -- test_ptrcall_newu8 ... [32mok[0m
+   -- test_ptrcall_newf32 ... [32mok[0m
+   -- test_ptrcall_newf64 ... [32mok[0m
+   -- test_ptrcall_newbool ... [32mok[0m
+   -- test_ptrcall_newcolor ... [32mok[0m
+   -- test_ptrcall_newstring ... [32mok[0m
+   -- test_ptrcall_newstringname ... [32mok[0m
+   -- test_ptrcall_newnodepath ... [32mok[0m
+   -- test_ptrcall_newvector2 ... [32mok[0m
+   -- test_ptrcall_newvector3 ... [32mok[0m
+   -- test_ptrcall_newvector4 ... [32mok[0m
+   -- test_ptrcall_newvector2i ... [32mok[0m
+   -- test_ptrcall_newvector3i ... [32mok[0m
+   -- test_ptrcall_newvector4i ... [32mok[0m
+   -- test_ptrcall_newcallable ... [32mok[0m
+   -- test_ptrcall_variantarray ... [32mok[0m
+   -- test_ptrcall_dictionary ... [32mok[0m
+   -- test_ptrcall_instanceid ... [32mok[0m
+   -- test_ptrcall_variant ... [32mok[0m
+   -- test_ptrcall_error ... [32mok[0m
+   -- test_ptrcall_static_i64 ... [32mok[0m
+   -- test_ptrcall_static_i32 ... [32mok[0m
+   -- test_ptrcall_static_u32 ... [32mok[0m
+   -- test_ptrcall_static_i16 ... [32mok[0m
+   -- test_ptrcall_static_u16 ... [32mok[0m
+   -- test_ptrcall_static_i8 ... [32mok[0m
+   -- test_ptrcall_static_u8 ... [32mok[0m
+   -- test_ptrcall_static_f32 ... [32mok[0m
+   -- test_ptrcall_static_f64 ... [32mok[0m
+   -- test_ptrcall_static_bool ... [32mok[0m
+   -- test_ptrcall_static_color ... [32mok[0m
+   -- test_ptrcall_static_gstring ... [32mok[0m
+   -- test_ptrcall_static_stringname ... [32mok[0m
+   -- test_ptrcall_static_nodepath ... [32mok[0m
+   -- test_ptrcall_static_vector2 ... [32mok[0m
+   -- test_ptrcall_static_vector3 ... [32mok[0m
+   -- test_ptrcall_static_vector4 ... [32mok[0m
+   -- test_ptrcall_static_vector2i ... [32mok[0m
+   -- test_ptrcall_static_vector3i ... [32mok[0m
+   -- test_ptrcall_static_vector4i ... [32mok[0m
+   -- test_ptrcall_static_callable ... [32mok[0m
+   -- test_ptrcall_static_signal ... [32mok[0m
+   -- test_ptrcall_static_rect2 ... [32mok[0m
+   -- test_ptrcall_static_rect2i ... [32mok[0m
+   -- test_ptrcall_static_transform2d ... [32mok[0m
+   -- test_ptrcall_static_plane ... [32mok[0m
+   -- test_ptrcall_static_quaternion ... [32mok[0m
+   -- test_ptrcall_static_aabb ... [32mok[0m
+   -- test_ptrcall_static_basis ... [32mok[0m
+   -- test_ptrcall_static_transform3d ... [32mok[0m
+   -- test_ptrcall_static_projection ... [32mok[0m
+   -- test_ptrcall_static_rid ... [32mok[0m
+   -- test_ptrcall_static_option_gd_node ... [32mok[0m
+   -- test_ptrcall_static_option_gd_resource ... [32mok[0m
+   -- test_ptrcall_static_packedbytearray ... [32mok[0m
+   -- test_ptrcall_static_packedint32array ... [32mok[0m
+   -- test_ptrcall_static_packedint64array ... [32mok[0m
+   -- test_ptrcall_static_packedfloat32array ... [32mok[0m
+   -- test_ptrcall_static_packedfloat64array ... [32mok[0m
+   -- test_ptrcall_static_packedstringarray ... [32mok[0m
+   -- test_ptrcall_static_packedvector2array ... [32mok[0m
+   -- test_ptrcall_static_packedvector3array ... [32mok[0m
+   -- test_ptrcall_static_packedcolorarray ... [32mok[0m
+   -- test_ptrcall_static_newi64 ... [32mok[0m
+   -- test_ptrcall_static_newi32 ... [32mok[0m
+   -- test_ptrcall_static_newu32 ... [32mok[0m
+   -- test_ptrcall_static_newi16 ... [32mok[0m
+   -- test_ptrcall_static_newu16 ... [32mok[0m
+   -- test_ptrcall_static_newi8 ... [32mok[0m
+   -- test_ptrcall_static_newu8 ... [32mok[0m
+   -- test_ptrcall_static_newf32 ... [32mok[0m
+   -- test_ptrcall_static_newf64 ... [32mok[0m
+   -- test_ptrcall_static_newbool ... [32mok[0m
+   -- test_ptrcall_static_newcolor ... [32mok[0m
+   -- test_ptrcall_static_newstring ... [32mok[0m
+   -- test_ptrcall_static_newstringname ... [32mok[0m
+   -- test_ptrcall_static_newnodepath ... [32mok[0m
+   -- test_ptrcall_static_newvector2 ... [32mok[0m
+   -- test_ptrcall_static_newvector3 ... [32mok[0m
+   -- test_ptrcall_static_newvector4 ... [32mok[0m
+   -- test_ptrcall_static_newvector2i ... [32mok[0m
+   -- test_ptrcall_static_newvector3i ... [32mok[0m
+   -- test_ptrcall_static_newvector4i ... [32mok[0m
+   -- test_ptrcall_static_newcallable ... [32mok[0m
+   -- test_ptrcall_static_variantarray ... [32mok[0m
+   -- test_ptrcall_static_dictionary ... [32mok[0m
+   -- test_ptrcall_static_instanceid ... [32mok[0m
+   -- test_ptrcall_static_variant ... [32mok[0m
+   -- test_ptrcall_static_error ... [32mok[0m
+
+   InheritTests.gd:
+   -- test_vector_array_return_from_user_func ... [32mok[0m
+
+   ScriptInstanceTests.gd:
+   -- test_script_instance_get_property ... [32mok[0m
+   -- test_script_instance_set_property ... [32mok[0m
+   -- test_script_instance_call ... [32mok[0m
+   -- test_script_instance_property_list ... [32mok[0m
+   -- test_script_instance_method_list ... [32mok[0m
+   -- test_script_instance_has_method ... [32mok[0m
+   -- test_script_instance_to_string ... [32mok[0m
+   -- test_script_instance_mut_call ... [32mok[0m
+   -- test_script_instance_re_entering_call ... [32mok[0m
+   -- test_object_script_instance ... [32mok[0m
+
+   SpecialTests.gd:
+   -- test_collision_object_2d_input_event ... [32mok[0m
+
+Test result: [32mok[0m. 844 passed; 0 failed, 7 skipped.
+  Time: 0.14s.  (Rust 0.09s, GDScript 0.05s)
+
+
+[36;1;1mRun[0m Godot benchmarks...
+[33m  Warning: both Rust and Godot engine use debug builds, benchmarks may not be expressive.[0m
+  Rust: found 16 benchmarks in 2 files.
+
+[36m                                              min       median[0m
+   color.rs:
+   -- godot_from_hsv             ...      0.179μs      0.180μs
+   -- rust_from_hsv              ...      0.063μs      0.063μs
+   -- color_hsv_hue_wrap         ...      0.041μs      0.042μs
+   -- rgb_to_hsv_roundtrip       ...      0.119μs      0.119μs
+   -- rgb_to_hsv_mutate_roundtri ...      0.134μs      0.134μs
+
+   mod.rs:
+   -- builtin_string_ctor        ...      0.190μs      0.190μs
+   -- builtin_stringname_ctor    ...      0.275μs      0.278μs
+   -- builtin_rust_call          ...      0.042μs      0.042μs
+   -- builtin_ffi_call           ...      0.146μs      0.149μs
+   -- class_node_life            ...      2.835μs      2.857μs
+   -- class_refcounted_life      ...      8.846μs      8.969μs
+   -- class_user_refc_life       ...     20.282μs     21.138μs
+   -- class_singleton_access     ...      0.508μs      0.649μs
+   -- utilities_allocate_rid     ...      0.074μs      0.104μs
+   -- utilities_rust_call        ...      0.045μs      0.046μs
+   -- utilities_ffi_call         ...      0.113μs      0.173μs
+
+Benchmarks completed in 0.76s.

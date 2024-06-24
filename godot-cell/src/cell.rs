@@ -13,6 +13,8 @@ use std::ptr::NonNull;
 use std::sync::Mutex;
 
 use crate::borrow_state::BorrowState;
+#[cfg(debug_assertions)]
+use crate::debug_state::DebugState;
 use crate::guards::{InaccessibleGuard, MutGuard, RefGuard};
 
 /// A cell which can hand out new `&mut` references to its value even when one already exists. As long as
@@ -67,6 +69,16 @@ impl<T> GdCell<T> {
     pub fn is_currently_bound(&self) -> bool {
         self.0.as_ref().is_currently_bound()
     }
+
+    #[cfg(debug_assertions)]
+    pub fn debug_borrows(&self) -> String {
+        self.0.state.lock().unwrap().debug_state.borrow_locations()
+    }
+
+    #[cfg(not(debug_assertions))]
+    pub fn debug_borrows(&self) -> String {
+        "tracking borrows is only enabled when debug assertions are enabled".into()
+    }
 }
 
 /// Internals of [`GdCell`].
@@ -105,10 +117,12 @@ impl<T> GdCellInner<T> {
     pub fn borrow(self: Pin<&Self>) -> Result<RefGuard<'_, T>, Box<dyn Error>> {
         let mut state = self.state.lock().unwrap();
         state.borrow_state.increment_shared()?;
+        let ptr = state.get_ptr();
+        drop(state);
 
         // SAFETY: `increment_shared` succeeded, therefore there cannot currently be any accessible mutable
         // references.
-        unsafe { Ok(RefGuard::new(&self.get_ref().state, state.get_ptr())) }
+        unsafe { Ok(RefGuard::new(&self.get_ref().state, ptr)) }
     }
 
     /// Returns a new mutable reference to the contents of the cell.
@@ -119,6 +133,7 @@ impl<T> GdCellInner<T> {
         state.borrow_state.increment_mut()?;
         let count = state.borrow_state.mut_count();
         let value = state.get_ptr();
+        drop(state);
 
         // SAFETY: `increment_mut` succeeded, therefore any existing mutable references are inaccessible.
         // Additionally no new references can be created, unless the returned guard is made inaccessible.
@@ -199,6 +214,9 @@ pub(crate) struct CellState<T> {
     ///
     /// This is used to ensure that the pointers are not replaced in the wrong order.
     pub(crate) stack_depth: usize,
+
+    #[cfg(debug_assertions)]
+    pub(crate) debug_state: DebugState,
 }
 
 impl<T> CellState<T> {
@@ -209,6 +227,8 @@ impl<T> CellState<T> {
             borrow_state: BorrowState::new(),
             ptr: std::ptr::null_mut(),
             stack_depth: 0,
+            #[cfg(debug_assertions)]
+            debug_state: DebugState::new(),
         }
     }
 

@@ -34,6 +34,7 @@ mod blocking_cell;
 mod blocking_guards;
 mod borrow_state;
 mod cell;
+mod debug_state;
 mod guards;
 
 pub mod panicking {

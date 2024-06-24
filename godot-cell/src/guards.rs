@@ -5,6 +5,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::backtrace::Backtrace;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::sync::{Mutex, MutexGuard};
@@ -23,6 +24,9 @@ pub struct RefGuard<'a, T> {
 
     /// A pointer to the borrowed value.
     value: NonNull<T>,
+
+    #[cfg(debug_assertions)]
+    borrow_id: u64,
 }
 
 impl<'a, T> RefGuard<'a, T> {
@@ -41,7 +45,15 @@ impl<'a, T> RefGuard<'a, T> {
     /// These conditions ensure that it is safe to call [`as_ref()`](NonNull::as_ref) on `value` for as long
     /// as the returned guard exists.
     pub(crate) unsafe fn new(state: &'a Mutex<CellState<T>>, value: NonNull<T>) -> Self {
-        Self { state, value }
+        #[cfg(debug_assertions)]
+        let borrow_id = state.lock().unwrap().debug_state.track_shared_borrow();
+
+        Self {
+            state,
+            value,
+            #[cfg(debug_assertions)]
+            borrow_id,
+        }
     }
 }
 
@@ -56,12 +68,11 @@ impl<'a, T> Deref for RefGuard<'a, T> {
 
 impl<'a, T> Drop for RefGuard<'a, T> {
     fn drop(&mut self) {
-        self.state
-            .lock()
-            .unwrap()
-            .borrow_state
-            .decrement_shared()
-            .unwrap();
+        let mut state = self.state.lock().unwrap();
+        state.borrow_state.decrement_shared().unwrap();
+
+        #[cfg(debug_assertions)]
+        state.debug_state.untrack_shared_borrow(self.borrow_id);
     }
 }
 
@@ -114,6 +125,9 @@ impl<'a, T> MutGuard<'a, T> {
         count: usize,
         value: NonNull<T>,
     ) -> Self {
+        #[cfg(debug_assertions)]
+        state.lock().unwrap().debug_state.track_mutable_borrow(None);
+
         Self {
             state,
             count,
@@ -202,6 +216,8 @@ pub struct InaccessibleGuard<'a, T> {
     state: &'a Mutex<CellState<T>>,
     stack_depth: usize,
     prev_ptr: NonNull<T>,
+    #[cfg(debug_assertions)]
+    mutable_borrow: Option<Backtrace>,
 }
 
 impl<'a, T> InaccessibleGuard<'a, T> {
@@ -226,6 +242,8 @@ impl<'a, T> InaccessibleGuard<'a, T> {
 
         let current_ptr = guard.get_ptr();
         let new_ptr = NonNull::from(new_ref);
+        #[cfg(debug_assertions)]
+        let mutable_borrow = guard.debug_state.untrack_mutable_borrow();
 
         if current_ptr != new_ptr {
             // it is likely not unsound for this to happen, but it's unexpected
@@ -240,6 +258,8 @@ impl<'a, T> InaccessibleGuard<'a, T> {
             state,
             stack_depth,
             prev_ptr,
+            #[cfg(debug_assertions)]
+            mutable_borrow: Some(mutable_borrow),
         })
     }
 
@@ -248,6 +268,7 @@ impl<'a, T> InaccessibleGuard<'a, T> {
         mut state: MutexGuard<'_, CellState<T>>,
         prev_ptr: NonNull<T>,
         stack_depth: usize,
+        #[cfg(debug_assertions)] mutable_borrow: Backtrace,
     ) {
         if state.stack_depth != stack_depth {
             state
@@ -257,6 +278,8 @@ impl<'a, T> InaccessibleGuard<'a, T> {
         }
         state.borrow_state.unset_inaccessible().unwrap();
         state.pop_ptr(prev_ptr);
+        #[cfg(debug_assertions)]
+        state.debug_state.track_mutable_borrow(Some(mutable_borrow));
     }
 
     /// Drop self if possible, otherwise returns self again.
@@ -265,12 +288,18 @@ impl<'a, T> InaccessibleGuard<'a, T> {
     /// logic may poison state, however it should not cause any UB either way.
     #[doc(hidden)]
     pub fn try_drop(self) -> Result<(), std::mem::ManuallyDrop<Self>> {
-        let manual = std::mem::ManuallyDrop::new(self);
+        let mut manual = std::mem::ManuallyDrop::new(self);
         let state = manual.state.lock().unwrap();
         if !state.borrow_state.may_unset_inaccessible() || state.stack_depth != manual.stack_depth {
             return Err(manual);
         }
-        Self::perform_drop(state, manual.prev_ptr, manual.stack_depth);
+        Self::perform_drop(
+            state,
+            manual.prev_ptr,
+            manual.stack_depth,
+            #[cfg(debug_assertions)]
+            manual.mutable_borrow.take().unwrap(),
+        );
 
         Ok(())
     }
@@ -281,6 +310,12 @@ impl<'a, T> Drop for InaccessibleGuard<'a, T> {
         // Default behavior of drop-logic simply panics and poisons the cell on failure. This is appropriate
         // for single-threaded code where no errors should happen here.
         let state = self.state.lock().unwrap();
-        Self::perform_drop(state, self.prev_ptr, self.stack_depth);
+        Self::perform_drop(
+            state,
+            self.prev_ptr,
+            self.stack_depth,
+            #[cfg(debug_assertions)]
+            self.mutable_borrow.take().unwrap(),
+        );
     }
 }

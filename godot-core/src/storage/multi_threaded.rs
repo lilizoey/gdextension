@@ -61,11 +61,13 @@ unsafe impl<T: GodotClass> Storage for InstanceStorage<T> {
 
     fn get(&self) -> RefGuard<'_, T> {
         self.user_instance.borrow().unwrap_or_else(|err| {
+            let borrows = self.user_instance.debug_borrows();
             panic!(
                 "\
                     Gd<T>::bind() failed, already bound; T = {}.\n  \
                     Make sure to use `self.base_mut()` or `self.base()` instead of `self.to_gd()` when possible.\n  \
-                    Details: {err}.\
+                    Details: {err}.\n\
+                    Current borrows:\n{borrows}\
                 ",
                 type_name::<T>()
             )
@@ -74,11 +76,13 @@ unsafe impl<T: GodotClass> Storage for InstanceStorage<T> {
 
     fn get_mut(&self) -> MutGuard<'_, T> {
         self.user_instance.borrow_mut().unwrap_or_else(|err| {
+            let borrows = self.user_instance.debug_borrows();
             panic!(
                 "\
                     Gd<T>::bind_mut() failed, already bound; T = {}.\n  \
                     Make sure to use `self.base_mut()` instead of `self.to_gd()` when possible.\n  \
-                    Details: {err}.\
+                    Details: {err}.\n\
+                    Current borrows:\n{borrows}\
                 ",
                 type_name::<T>()
             )

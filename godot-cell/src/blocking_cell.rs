@@ -145,6 +145,21 @@ impl<T> GdCellBlocking<T> {
 
         tracker_guard
     }
+
+    #[cfg(debug_assertions)]
+    pub fn debug_borrows(&self) -> String {
+        self.inner
+            .state
+            .lock()
+            .unwrap()
+            .debug_state
+            .borrow_locations()
+    }
+
+    #[cfg(not(debug_assertions))]
+    pub fn debug_borrows(&self) -> String {
+        "tracking borrows is only enabled when debug assertions are enabled".into()
+    }
 }
 
 /// Holds the reference count and the currently mutable thread.
