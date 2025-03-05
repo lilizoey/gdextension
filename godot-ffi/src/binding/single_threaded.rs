@@ -9,16 +9,67 @@
 //!
 //! If used from different threads then there will be runtime errors in debug mode and UB in release mode.
 
-use std::cell::Cell;
+use std::{
+    cell::{Cell, UnsafeCell},
+    mem::MaybeUninit,
+    ops::Deref,
+};
 
 use super::GodotBinding;
-use crate::ManualInitCell;
+
+const BACKUP_LIMIT: usize = 32;
+
+struct Thing<const N: usize, T> {
+    values: [UnsafeCell<MaybeUninit<T>>; N],
+    current_index: Cell<usize>,
+}
+
+impl<const N: usize, T> Thing<N, T> {
+    pub const fn new(initial: T) -> Self {
+        let mut values = [const { UnsafeCell::new(MaybeUninit::uninit()) }; N];
+        *values[0].get_mut() = MaybeUninit::new(initial);
+        Self {
+            values,
+            current_index: Cell::new(0),
+        }
+    }
+
+    pub fn get(&self) -> &T {
+        let index = self.current_index.get();
+        // SAFETY: current_index is always less than 32
+        let current_value = unsafe { self.values.get_unchecked(index) };
+        // SAFETY: values[current_index] must be immutable
+        let current_ref = unsafe { &*current_value.get() };
+        // SAFETY: values[current_index] must be initialized
+        unsafe { current_ref.assume_init_ref() }
+    }
+
+    pub fn push(&self, value: T) {
+        let current_index = self.current_index.get();
+        let index = current_index + 1;
+        assert!(index < N);
+
+        let slot = unsafe { &mut *self.values[index].get() };
+        *slot = MaybeUninit::new(value);
+        self.current_index.set(index);
+    }
+}
+
+impl<const N: usize, T> Deref for Thing<N, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.get()
+    }
+}
+
+unsafe impl<const N: usize, T> Sync for Thing<N, T> {}
 
 pub(super) struct BindingStorage {
     // No threading when linking against Godot with a nothreads Wasm build.
     // Therefore, we just need to check if the bindings were initialized, as all accesses are from the main thread.
     initialized: Cell<bool>,
-    binding: ManualInitCell<GodotBinding>,
+    binding: Thing<BACKUP_LIMIT, GodotBinding>,
 }
 
 impl BindingStorage {
@@ -28,10 +79,10 @@ impl BindingStorage {
     ///
     /// You must not access `binding` from a thread different from the thread [`initialize`](BindingStorage::initialize) was first called from.
     #[inline(always)]
-    unsafe fn storage() -> &'static Self {
+    fn storage() -> &'static Self {
         static BINDING: BindingStorage = BindingStorage {
             initialized: Cell::new(false),
-            binding: ManualInitCell::new(),
+            binding: Thing::new(GodotBinding::new_uninit()),
         };
 
         &BINDING
@@ -85,7 +136,7 @@ impl BindingStorage {
         // SAFETY: We are the first thread to set this binding (possibly after deinitialize), as otherwise the above set() would fail and
         // return early. We also know initialize() is not called concurrently with anything else that can call another method on the binding,
         // since this method is called from the main thread and so must any other methods.
-        unsafe { storage.binding.set(binding) };
+        storage.binding.push(binding);
     }
 
     /// Deinitialize the binding storage.
@@ -105,9 +156,7 @@ impl BindingStorage {
         unsafe { storage.set_initialized(false) };
 
         // SAFETY: We are the only thread that can access the binding, and we know that it's initialized.
-        unsafe {
-            storage.binding.clear();
-        }
+        storage.binding.push(GodotBinding::new_uninit());
     }
 
     /// Get the binding from the binding storage.
@@ -116,10 +165,10 @@ impl BindingStorage {
     /// - Must be called from the main thread.
     /// - The binding must be initialized.
     #[inline(always)]
-    pub unsafe fn get_binding_unchecked() -> &'static GodotBinding {
+    pub fn get_binding_unchecked() -> &'static GodotBinding {
         // SAFETY: The bindings were initialized on the main thread because `initialize` must be called from the main thread,
         // and this function is called from the main thread.
-        let storage = unsafe { Self::storage() };
+        let storage = Self::storage();
 
         // We only check if we are in the main thread in debug builds if we aren't building for a non-threaded Godot build,
         // since we could otherwise assume there won't be multi-threading.
@@ -146,12 +195,12 @@ impl BindingStorage {
         }
 
         // SAFETY: This function can only be called when the binding is initialized and from the main thread, so we know that it's initialized.
-        unsafe { storage.binding.get_unchecked() }
+        storage.binding.get()
     }
 
     pub fn is_initialized() -> bool {
         // SAFETY: We don't access the binding.
-        let storage = unsafe { Self::storage() };
+        let storage = Self::storage();
 
         storage.initialized()
     }
@@ -168,7 +217,7 @@ pub struct GdextConfig {
 }
 
 impl GdextConfig {
-    pub fn new(tool_only_in_editor: bool) -> Self {
+    pub const fn new(tool_only_in_editor: bool) -> Self {
         Self {
             tool_only_in_editor,
             is_editor: std::cell::OnceCell::new(),

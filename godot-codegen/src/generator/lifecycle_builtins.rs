@@ -5,44 +5,99 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::models::domain::{BuiltinVariant, Constructor, ExtensionApi, Operator};
-use proc_macro2::TokenStream;
+use crate::{
+    models::domain::{BuiltinVariant, Constructor, ExtensionApi, Operator},
+    util::ident,
+};
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
-pub fn make_variant_fns(
-    api: &ExtensionApi,
-    builtin: &BuiltinVariant,
-) -> (TokenStream, TokenStream) {
-    let (special_decls, special_inits);
+pub struct LifecycleFns {
+    fns: Vec<LifecycleFn>,
+}
+
+impl LifecycleFns {
+    pub fn method_decls(&self) -> TokenStream {
+        self.fns.iter().map(|f| f.method_decl()).collect()
+    }
+
+    pub fn initializers(&self) -> TokenStream {
+        self.fns.iter().map(|f| f.initializers.clone()).collect()
+    }
+
+    pub fn mock_fns(&self) -> TokenStream {
+        self.fns.iter().map(|f| f.mock_fn()).collect()
+    }
+
+    pub fn mock_inits(&self) -> TokenStream {
+        self.fns.iter().map(|f| f.mock_init()).collect()
+    }
+}
+
+pub struct LifecycleFn {
+    name: Ident,
+    method_params: Vec<(Ident, TokenStream)>,
+    initializers: TokenStream,
+}
+
+impl LifecycleFn {
+    fn method_decl(&self) -> TokenStream {
+        let name = &self.name;
+        let param_tys = self.param_tys();
+
+        quote! {
+            pub #name: unsafe extern "C" fn(#(#param_tys),*),
+        }
+    }
+
+    fn param_tys(&self) -> impl Iterator<Item = &TokenStream> {
+        self.method_params.iter().map(|(_, ty)| ty)
+    }
+
+    fn mock_fn(&self) -> TokenStream {
+        let name = &self.name;
+        let param_names = self.method_params.iter().map(|(n, _)| n);
+        let param_tys = self.method_params.iter().map(|(_, t)| t);
+
+        quote! {
+            pub(super) unsafe extern "C" fn #name(#(#param_names: #param_tys),*) {
+                panic!("Godot bindings uninitialized");
+            }
+        }
+    }
+
+    fn mock_init(&self) -> TokenStream {
+        let name = &self.name;
+
+        quote! {
+            #name: mock::#name,
+        }
+    }
+}
+
+pub fn make_variant_fns(api: &ExtensionApi, builtin: &BuiltinVariant) -> LifecycleFns {
+    let mut extra_fns = Vec::new();
+
     if let Some(builtin_class) = builtin.associated_builtin_class() {
-        let (construct_decls, construct_inits) =
-            make_construct_fns(api, builtin, &builtin_class.constructors);
-
-        let (destroy_decls, destroy_inits) =
-            make_destroy_fns(builtin, builtin_class.has_destructor);
-
-        let (op_eq_decls, op_eq_inits) =
-            make_operator_fns(builtin, &builtin_class.operators, "==", "EQUAL");
-
-        let (op_lt_decls, op_lt_inits) =
-            make_operator_fns(builtin, &builtin_class.operators, "<", "LESS");
-
-        special_decls = quote! {
-            #op_eq_decls
-            #op_lt_decls
-            #construct_decls
-            #destroy_decls
-        };
-        special_inits = quote! {
-            #op_eq_inits
-            #op_lt_inits
-            #construct_inits
-            #destroy_inits
-        };
-    } else {
-        special_decls = TokenStream::new();
-        special_inits = TokenStream::new();
-    };
+        extra_fns.extend(make_construct_fns(
+            api,
+            builtin,
+            &builtin_class.constructors,
+        ));
+        extra_fns.extend(make_destroy_fns(builtin, builtin_class.has_destructor));
+        extra_fns.extend(make_operator_fns(
+            builtin,
+            &builtin_class.operators,
+            "==",
+            "EQUAL",
+        ));
+        extra_fns.extend(make_operator_fns(
+            builtin,
+            &builtin_class.operators,
+            "<",
+            "LESS",
+        ));
+    }
 
     let snake_case = builtin.snake_name();
     let to_variant = format_ident!("{}_to_variant", snake_case);
@@ -58,26 +113,42 @@ pub fn make_variant_fns(
     // The target types are uninitialized-ptrs, because Godot performs placement new on those:
     // https://github.com/godotengine/godot/blob/b40b35fb39f0d0768d7ec2976135adffdce1b96d/core/variant/variant_internal.h#L1535-L1535
 
-    let decl = quote! {
-        pub #to_variant: unsafe extern "C" fn(GDExtensionUninitializedVariantPtr, GDExtensionTypePtr),
-        pub #from_variant: unsafe extern "C" fn(GDExtensionUninitializedTypePtr, GDExtensionVariantPtr),
-        #special_decls
-    };
-
-    // Field initialization in new().
-    let init = quote! {
+    let to_variant_init = quote! {
         #to_variant: {
             let fptr = unsafe { get_to_variant_fn(#variant_type) };
             crate::validate_builtin_lifecycle(fptr, #to_variant_str)
         },
+    };
+
+    let to_variant_fn = LifecycleFn {
+        name: to_variant,
+        method_params: vec![
+            (ident("foo"), quote! { GDExtensionUninitializedVariantPtr }),
+            (ident("bar"), quote! { GDExtensionTypePtr }),
+        ],
+        initializers: to_variant_init,
+    };
+
+    let from_variant_init = quote! {
         #from_variant: {
             let fptr = unsafe { get_from_variant_fn(#variant_type) };
             crate::validate_builtin_lifecycle(fptr, #from_variant_str)
         },
-        #special_inits
     };
 
-    (decl, init)
+    let from_variant_fn = LifecycleFn {
+        name: from_variant,
+        method_params: vec![
+            (ident("foo"), quote! { GDExtensionUninitializedTypePtr }),
+            (ident("bar"), quote! { GDExtensionVariantPtr }),
+        ],
+        initializers: from_variant_init,
+    };
+
+    let mut fns = vec![to_variant_fn, from_variant_fn];
+    fns.extend(extra_fns);
+
+    LifecycleFns { fns }
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -87,9 +158,9 @@ fn make_construct_fns(
     api: &ExtensionApi,
     builtin: &BuiltinVariant,
     constructors: &[Constructor],
-) -> (TokenStream, TokenStream) {
+) -> Vec<LifecycleFn> {
     if constructors.is_empty() {
-        return (TokenStream::new(), TokenStream::new());
+        return Vec::new();
     };
 
     // Constructor vec layout:
@@ -121,8 +192,19 @@ fn make_construct_fns(
     let construct_default_str = construct_default.to_string();
     let construct_copy_str = construct_copy.to_string();
 
-    let (construct_extra_decls, construct_extra_inits) =
-        make_extra_constructors(api, builtin, constructors);
+    let default_initializer = quote! {
+        #construct_default: {
+            let fptr = unsafe { get_construct_fn(crate::#variant_type, 0i32) };
+            crate::validate_builtin_lifecycle(fptr, #construct_default_str)
+        },
+    };
+
+    let copy_initializer = quote! {
+        #construct_copy: {
+            let fptr = unsafe { get_construct_fn(crate::#variant_type, 1i32) };
+            crate::validate_builtin_lifecycle(fptr, #construct_copy_str)
+        },
+    };
 
     // Target types are uninitialized pointers, because Godot uses placement-new for raw pointer constructions. Callstack:
     // https://github.com/godotengine/godot/blob/b40b35fb39f0d0768d7ec2976135adffdce1b96d/core/extension/gdextension_interface.cpp#L511
@@ -130,29 +212,30 @@ fn make_construct_fns(
     // https://github.com/godotengine/godot/blob/b40b35fb39f0d0768d7ec2976135adffdce1b96d/core/variant/variant_construct.cpp#L36
     // https://github.com/godotengine/godot/blob/b40b35fb39f0d0768d7ec2976135adffdce1b96d/core/variant/variant_construct.h#L267
     // https://github.com/godotengine/godot/blob/b40b35fb39f0d0768d7ec2976135adffdce1b96d/core/variant/variant_construct.h#L50
-    let decls = quote! {
-        pub #construct_default: unsafe extern "C" fn(GDExtensionUninitializedTypePtr, *const GDExtensionConstTypePtr),
-        pub #construct_copy: unsafe extern "C" fn(GDExtensionUninitializedTypePtr, *const GDExtensionConstTypePtr),
-        #(
-            #construct_extra_decls
-        )*
+    let default_fn = LifecycleFn {
+        name: construct_default,
+        method_params: vec![
+            (ident("ret"), quote! { GDExtensionUninitializedTypePtr }),
+            (ident("foo"), quote! { *const GDExtensionConstTypePtr }),
+        ],
+        initializers: default_initializer,
     };
 
-    let inits = quote! {
-        #construct_default: {
-            let fptr = unsafe { get_construct_fn(crate::#variant_type, 0i32) };
-            crate::validate_builtin_lifecycle(fptr, #construct_default_str)
-        },
-        #construct_copy: {
-            let fptr = unsafe { get_construct_fn(crate::#variant_type, 1i32) };
-            crate::validate_builtin_lifecycle(fptr, #construct_copy_str)
-        },
-        #(
-            #construct_extra_inits
-        )*
+    let copy_fn = LifecycleFn {
+        name: construct_copy,
+        method_params: vec![
+            (ident("ret"), quote! { GDExtensionUninitializedTypePtr }),
+            (ident("foo"), quote! { *const GDExtensionConstTypePtr }),
+        ],
+        initializers: copy_initializer,
     };
 
-    (decls, inits)
+    let extra_fns = make_extra_constructors(api, builtin, constructors);
+
+    let mut fns = vec![default_fn, copy_fn];
+    fns.extend(extra_fns);
+
+    fns
 }
 
 /// Lists special cases for useful constructors
@@ -160,9 +243,9 @@ fn make_extra_constructors(
     api: &ExtensionApi,
     builtin: &BuiltinVariant,
     constructors: &[Constructor],
-) -> (Vec<TokenStream>, Vec<TokenStream>) {
-    let mut extra_decls = Vec::with_capacity(constructors.len() - 2);
-    let mut extra_inits = Vec::with_capacity(constructors.len() - 2);
+) -> Vec<LifecycleFn> {
+    let mut extra_fns = Vec::with_capacity(constructors.len() - 2);
+
     let variant_type = builtin.sys_variant_type();
 
     for (i, ctor) in constructors.iter().enumerate().skip(2) {
@@ -190,25 +273,31 @@ fn make_extra_constructors(
         };
 
         let construct_custom_str = construct_custom.to_string();
-        extra_decls.push(quote! {
-                pub #construct_custom: unsafe extern "C" fn(GDExtensionUninitializedTypePtr, *const GDExtensionConstTypePtr),
-            });
-
         let i = i as i32;
-        extra_inits.push(quote! {
+
+        let initializers = quote! {
             #construct_custom: {
                 let fptr = unsafe { get_construct_fn(crate::#variant_type, #i) };
                 crate::validate_builtin_lifecycle(fptr, #construct_custom_str)
             },
+        };
+
+        extra_fns.push(LifecycleFn {
+            name: construct_custom,
+            method_params: vec![
+                (ident("ret"), quote! { GDExtensionUninitializedTypePtr }),
+                (ident("foo"), quote! { *const GDExtensionConstTypePtr }),
+            ],
+            initializers,
         });
     }
 
-    (extra_decls, extra_inits)
+    extra_fns
 }
 
-fn make_destroy_fns(builtin: &BuiltinVariant, has_destructor: bool) -> (TokenStream, TokenStream) {
+fn make_destroy_fns(builtin: &BuiltinVariant, has_destructor: bool) -> Option<LifecycleFn> {
     if !has_destructor {
-        return (TokenStream::new(), TokenStream::new());
+        return None;
     }
 
     let destroy = format_ident!("{}_destroy", builtin.snake_name());
@@ -219,14 +308,19 @@ fn make_destroy_fns(builtin: &BuiltinVariant, has_destructor: bool) -> (TokenStr
         pub #destroy: unsafe extern "C" fn(GDExtensionTypePtr),
     };
 
-    let inits = quote! {
+    let initializers = quote! {
         #destroy: {
             let fptr = unsafe { get_destroy_fn(crate::#variant_type) };
             crate::validate_builtin_lifecycle(fptr, #destroy_str)
         },
     };
 
-    (decls, inits)
+    LifecycleFn {
+        name: destroy,
+        method_params: vec![(ident("value"), quote! { GDExtensionTypePtr })],
+        initializers,
+    }
+    .into()
 }
 
 fn make_operator_fns(
@@ -234,10 +328,10 @@ fn make_operator_fns(
     operators: &[Operator],
     json_symbol: &str,
     sys_name: &str,
-) -> (TokenStream, TokenStream) {
+) -> Option<LifecycleFn> {
     // If there are no operators for that builtin type, or none of the operator matches symbol, then don't generate function.
     if operators.is_empty() || !operators.iter().any(|op| op.symbol == json_symbol) {
-        return (TokenStream::new(), TokenStream::new());
+        return None;
     }
 
     let operator = format_ident!(
@@ -252,17 +346,26 @@ fn make_operator_fns(
     let sys_ident = format_ident!("GDEXTENSION_VARIANT_OP_{}", sys_name);
 
     // Field declaration.
-    let decl = quote! {
-        pub #operator: unsafe extern "C" fn(GDExtensionConstTypePtr, GDExtensionConstTypePtr, GDExtensionTypePtr),
-    };
+    // let method_decls = quote! {
+    //     pub #operator: unsafe extern "C" fn(GDExtensionConstTypePtr, GDExtensionConstTypePtr, GDExtensionTypePtr),
+    // };
 
     // Field initialization in new().
-    let init = quote! {
+    let initializers = quote! {
         #operator: {
             let fptr = unsafe { get_operator_fn(crate::#sys_ident, #variant_type, #variant_type) };
             crate::validate_builtin_lifecycle(fptr, #operator_str)
         },
     };
 
-    (decl, init)
+    LifecycleFn {
+        name: operator,
+        method_params: vec![
+            (ident("a"), quote! { GDExtensionConstTypePtr }),
+            (ident("b"), quote! { GDExtensionConstTypePtr }),
+            (ident("c"), quote! { GDExtensionTypePtr }),
+        ],
+        initializers,
+    }
+    .into()
 }

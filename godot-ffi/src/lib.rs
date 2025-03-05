@@ -159,7 +159,7 @@ impl GdextRuntimeMetadata {
     ///
     /// - The `string` field of `godot_version` must not be written to while this struct exists.
     /// - The `string` field of `godot_version` must be safe to read from while this struct exists.
-    pub unsafe fn new(godot_version: GDExtensionGodotVersion) -> Self {
+    pub const unsafe fn new(godot_version: GDExtensionGodotVersion) -> Self {
         Self { godot_version }
     }
 }

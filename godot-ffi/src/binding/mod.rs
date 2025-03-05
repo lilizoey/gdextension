@@ -30,20 +30,41 @@ pub use single_threaded::GdextConfig;
 // and `Send` for `GodotBinding` as that could hide issues if any of the field types are changed to no longer be sync/send, but the manual
 // implementation for `GodotBinding` wouldn't detect that.
 pub(crate) struct GodotBinding {
+    // Initialized with mock values.
     interface: GDExtensionInterface,
     library: ClassLibraryPtr,
     global_method_table: BuiltinLifecycleTable,
+    utility_function_table: UtilityFunctionTable,
+    runtime_metadata: GdextRuntimeMetadata,
+    config: GdextConfig,
+
+    // Initialized later.
     class_server_method_table: ManualInitCell<ClassServersMethodTable>,
     class_scene_method_table: ManualInitCell<ClassSceneMethodTable>,
     class_editor_method_table: ManualInitCell<ClassEditorMethodTable>,
     builtin_method_table: ManualInitCell<BuiltinMethodTable>,
-    utility_function_table: UtilityFunctionTable,
-    runtime_metadata: GdextRuntimeMetadata,
-    config: GdextConfig,
 }
 
 impl GodotBinding {
-    pub fn new(
+    pub const fn new_uninit() -> Self {
+        Self::new(
+            GDExtensionInterface::new(),
+            std::ptr::null_mut(),
+            BuiltinLifecycleTable::new(),
+            UtilityFunctionTable::new(),
+            // SAFETY: not safe
+            unsafe {
+                GdextRuntimeMetadata::new(crate::GDExtensionGodotVersion {
+                    major: 0,
+                    minor: 0,
+                    patch: 0,
+                    string: std::ptr::null(),
+                })
+            },
+            GdextConfig::new(true),
+        )
+    }
+    pub const fn new(
         interface: GDExtensionInterface,
         library: GDExtensionClassLibraryPtr,
         global_method_table: BuiltinLifecycleTable,
@@ -109,7 +130,7 @@ unsafe fn get_table<T>(table: &'static ManualInitCell<T>, msg: &str) -> &'static
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline(always)]
-pub unsafe fn get_interface() -> &'static GDExtensionInterface {
+pub fn get_interface() -> &'static GDExtensionInterface {
     &get_binding().interface
 }
 
@@ -119,7 +140,7 @@ pub unsafe fn get_interface() -> &'static GDExtensionInterface {
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline(always)]
-pub unsafe fn get_library() -> crate::GDExtensionClassLibraryPtr {
+pub fn get_library() -> crate::GDExtensionClassLibraryPtr {
     get_binding().library.0
 }
 
@@ -129,7 +150,7 @@ pub unsafe fn get_library() -> crate::GDExtensionClassLibraryPtr {
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline(always)]
-pub unsafe fn builtin_lifecycle_api() -> &'static BuiltinLifecycleTable {
+pub fn builtin_lifecycle_api() -> &'static BuiltinLifecycleTable {
     &get_binding().global_method_table
 }
 
@@ -195,7 +216,7 @@ pub unsafe fn builtin_method_table() -> &'static BuiltinMethodTable {
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline(always)]
-pub unsafe fn utility_function_table() -> &'static UtilityFunctionTable {
+pub fn utility_function_table() -> &'static UtilityFunctionTable {
     &get_binding().utility_function_table
 }
 
@@ -205,7 +226,7 @@ pub unsafe fn utility_function_table() -> &'static UtilityFunctionTable {
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline]
-pub unsafe fn config() -> &'static GdextConfig {
+pub fn config() -> &'static GdextConfig {
     &get_binding().config
 }
 
@@ -246,7 +267,7 @@ pub(crate) unsafe fn deinitialize_binding() {
 ///
 /// If "experimental-threads" is not enabled, then this must be called from the same thread that the bindings were initialized from.
 #[inline(always)]
-pub(crate) unsafe fn get_binding() -> &'static GodotBinding {
+pub(crate) fn get_binding() -> &'static GodotBinding {
     BindingStorage::get_binding_unchecked()
 }
 

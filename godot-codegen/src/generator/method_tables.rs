@@ -42,16 +42,20 @@ pub fn make_builtin_lifecycle_table(api: &ExtensionApi) -> TokenStream {
         },
         method_decls: Vec::with_capacity(len),
         method_inits: Vec::with_capacity(len),
+        mock_methods: Vec::with_capacity(len),
+        mock_inits: Vec::with_capacity(len),
         class_count: len,
         method_count: 0,
     };
 
     // Note: NIL is not part of this iteration, it will be added manually.
     for variant in builtins.iter() {
-        let (decls, inits) = lifecycle_builtins::make_variant_fns(api, variant);
+        let fns = lifecycle_builtins::make_variant_fns(api, variant);
 
-        table.method_decls.push(decls);
-        table.method_inits.push(inits);
+        table.method_decls.push(fns.method_decls());
+        table.method_inits.push(fns.initializers());
+        table.mock_methods.push(fns.mock_fns());
+        table.mock_inits.push(fns.mock_inits());
     }
 
     make_named_method_table(table)
@@ -154,6 +158,8 @@ pub fn make_utility_function_table(api: &ExtensionApi) -> TokenStream {
         },
         method_decls: vec![],
         method_inits: vec![],
+        mock_methods: vec![],
+        mock_inits: vec![],
         class_count: 0,
         method_count: 0,
     };
@@ -171,8 +177,22 @@ pub fn make_utility_function_table(api: &ExtensionApi) -> TokenStream {
             #field: crate::load_utility_function(get_utility_fn, string_names, #fn_name_str, #hash),
         });
 
+        table.mock_inits.push(quote! {
+            #field: mock::utility_function_bind,
+        });
+
         table.method_count += 1;
     }
+
+    table.mock_methods.push(quote! {
+        pub(super) unsafe extern "C" fn utility_function_bind(
+            r_return: crate::GDExtensionTypePtr,
+            p_args: *const crate::GDExtensionConstTypePtr,
+            p_argument_count: std::os::raw::c_int,
+        ) {
+            panic!("bindings uninitialized");
+        }
+    });
 
     make_named_method_table(table)
 }
@@ -187,6 +207,8 @@ struct NamedMethodTable {
     pre_init_code: TokenStream,
     method_decls: Vec<TokenStream>,
     method_inits: Vec<TokenStream>,
+    mock_methods: Vec<TokenStream>,
+    mock_inits: Vec<TokenStream>,
     class_count: usize,
     method_count: usize,
 }
@@ -268,9 +290,36 @@ fn make_named_method_table(info: NamedMethodTable) -> TokenStream {
         pre_init_code,
         method_decls,
         method_inits,
+        mock_methods,
+        mock_inits,
         class_count,
         method_count,
     } = info;
+
+    let mock_module = if !mock_methods.is_empty() {
+        quote! {
+            #[allow(unused_variables)]
+            mod mock {
+                use super::*;
+
+                #(#mock_methods)*
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
+
+    let mock_new = if !mock_inits.is_empty() {
+        quote! {
+            pub(crate) const fn new() -> Self {
+                Self {
+                    #(#mock_inits)*
+                }
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
 
     // Assumes that both decls and inits already have a trailing comma.
     // This is necessary because some generators emit multiple lines (statements) per element.
@@ -298,7 +347,11 @@ fn make_named_method_table(info: NamedMethodTable) -> TokenStream {
                     #( #method_inits )*
                 }
             }
+
+            #mock_new
         }
+
+        #mock_module
     }
 }
 
